@@ -1,0 +1,1513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StateSpace Expo</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#06060f;--s1:#0b0b18;--s2:#10101f;--s3:#16162a;--s4:#1c1c36;
+  --bd:rgba(255,255,255,0.07);--bd2:rgba(255,255,255,0.13);
+  --txt:#dde0f5;--mut:#5a5a8a;--dim:#2e2e58;
+  --cy:#00d4ff;--gn:#3effa0;--yw:#ffd166;--or:#ff9f43;--rd:#ff4c6a;--vi:#6c63ff;--pk:#ff6b9d;
+  /* ALGORITHM COLORS — the key to visibility */
+  --frontier:#f59e0b;--visited:#3b82f6;--path:#10b981;--startc:#8b5cf6;--endc:#ef4444;
+  --mono:'JetBrains Mono',monospace;--sans:'Outfit',sans-serif;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;overflow:hidden}
+body{font-family:var(--sans);background:var(--bg);color:var(--txt);display:flex;flex-direction:column}
+
+/* TOPBAR */
+.topbar{height:48px;display:flex;align-items:center;padding:0 18px;gap:12px;background:var(--s1);border-bottom:1px solid var(--bd);flex-shrink:0;z-index:50}
+.brand{font-size:16px;font-weight:900;letter-spacing:-0.5px;display:flex;align-items:baseline}
+.brand-ss{color:var(--cy)}.brand-ex{color:var(--txt);opacity:.55;font-weight:400;font-size:12px;margin-left:4px;letter-spacing:.5px}
+.topbar-sep{width:1px;height:20px;background:var(--bd2)}
+.topbar-desc{font-size:11px;color:var(--mut);font-family:var(--mono)}
+/* LEGEND in topbar */
+.tl{display:flex;align-items:center;gap:14px;margin-left:6px}
+.tli{display:flex;align-items:center;gap:5px;font:600 9px var(--mono);color:var(--mut)}
+.tld{width:10px;height:10px;border-radius:2px}
+
+/* LAYOUT */
+.body{display:flex;flex:1;overflow:hidden}
+
+/* SIDEBAR */
+.sidebar{width:215px;min-width:215px;overflow-y:auto;background:var(--s1);border-right:1px solid var(--bd);padding:8px 0 20px}
+.sb-label{font:600 8px var(--mono);letter-spacing:2.5px;color:var(--mut);text-transform:uppercase;padding:12px 14px 5px;opacity:.65}
+.sb-btn{display:flex;align-items:center;gap:9px;padding:7px 11px;margin:1px 6px;border:none;border-radius:7px;background:transparent;color:var(--mut);cursor:pointer;font-family:var(--sans);font-size:12px;font-weight:500;text-align:left;transition:background .15s,color .15s;width:calc(100% - 12px)}
+.sb-btn:hover{background:var(--s2);color:var(--txt)}.sb-btn.active{background:var(--s3);color:var(--txt)}
+.sb-icon{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;background:var(--s3)}
+.sb-btn.active .sb-icon{background:var(--s4)}
+.sb-meta{display:flex;flex-direction:column;gap:1px;min-width:0}
+.sb-name{font-size:12px;font-weight:600;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sb-tag{font:400 9px var(--mono);color:var(--mut)}
+
+/* MAIN */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+
+/* TOOLBAR */
+.toolbar{height:46px;display:flex;align-items:center;gap:7px;padding:0 13px;background:var(--s1);border-bottom:1px solid var(--bd);flex-shrink:0}
+.tb-title{font-size:13px;font-weight:700;white-space:nowrap}
+.tb-sep{width:1px;height:18px;background:var(--bd2);flex-shrink:0}
+select.sel{padding:4px 9px;border-radius:6px;border:1px solid var(--bd2);background:var(--s2);color:var(--txt);font:500 11px var(--sans);cursor:pointer;outline:none}
+.btn{padding:4px 12px;border-radius:6px;border:1px solid var(--bd2);background:var(--s2);color:var(--mut);font:500 11px var(--sans);cursor:pointer;transition:all .13s;white-space:nowrap;outline:none}
+.btn:hover{color:var(--txt);background:var(--s3)}.btn:active{transform:scale(.97)}
+.btn.run{background:var(--cy);color:#050510;border-color:transparent;font-weight:700}
+.btn.run:hover{opacity:.85}.btn.run:disabled{opacity:.35;cursor:not-allowed;transform:none}
+.btn.warn{color:var(--rd);border-color:rgba(255,76,106,.25)}
+.sp{flex:1}
+.speed-wrap{display:flex;align-items:center;gap:6px}
+.speed-lbl{font:500 10px var(--mono);color:var(--mut);min-width:32px;text-align:right}
+input[type=range]{width:72px;accent-color:var(--frontier);cursor:pointer}
+.step-pill{font:600 10px var(--mono);padding:3px 9px;border-radius:10px;background:var(--s2);border:1px solid var(--bd);color:var(--mut);white-space:nowrap}
+/* Sound toggle */
+.sound-btn{font-size:15px;background:none;border:none;cursor:pointer;padding:2px 6px;border-radius:5px;transition:opacity .2s}
+.sound-btn:hover{opacity:.7}
+
+/* WORKSPACE */
+.workspace{display:flex;flex:1;overflow:hidden}
+
+/* CANVAS */
+.canvas-wrap{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.canvas-area{flex:1;display:flex;align-items:center;justify-content:center;padding:12px;overflow:hidden;position:relative}
+canvas{display:block;border-radius:8px;border:1px solid var(--bd)}
+
+/* LIVE STATUS BAR */
+.status-bar{height:36px;min-height:36px;display:flex;align-items:center;gap:0;background:var(--s1);border-top:1px solid var(--bd);padding:0 12px;flex-shrink:0}
+.phase-dot{width:8px;height:8px;border-radius:50%;margin-right:7px;transition:background .3s,box-shadow .3s;flex-shrink:0}
+.phase-txt{font:700 9px var(--mono);letter-spacing:1.5px;text-transform:uppercase;margin-right:12px;min-width:68px;transition:color .3s}
+.status-msg{font:400 10px var(--mono);color:var(--mut);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sc-row{display:flex;gap:0;margin-left:auto}
+.sc{padding:0 12px;border-left:1px solid var(--bd);display:flex;flex-direction:column;align-items:center;gap:0}
+.sc-v{font:700 13px var(--mono);color:var(--txt);line-height:1.1}
+.sc-k{font:400 8px var(--mono);color:var(--mut);letter-spacing:1px;text-transform:uppercase}
+
+/* RIGHT INFO PANEL */
+.info{width:272px;min-width:272px;overflow-y:auto;background:var(--s1);border-left:1px solid var(--bd);display:flex;flex-direction:column}
+.ip-sec{padding:11px 13px;border-bottom:1px solid var(--bd)}
+.ip-lbl{font:600 8px var(--mono);letter-spacing:2px;color:var(--mut);text-transform:uppercase;margin-bottom:8px}
+.acard{background:var(--s2);border:1px solid var(--bd);border-radius:8px;padding:11px 12px}
+.acard-name{font-size:12px;font-weight:700;margin-bottom:4px}
+.acard-desc{font-size:10px;color:var(--mut);line-height:1.65;margin-bottom:8px}
+.tags{display:flex;gap:4px;flex-wrap:wrap}
+.tag{font:500 9px var(--mono);padding:2px 6px;border-radius:4px;border:1px solid var(--bd);background:rgba(255,255,255,.03);color:var(--mut)}
+.tag.g{background:rgba(62,255,160,.07);border-color:rgba(62,255,160,.2);color:var(--gn)}
+.tag.r{background:rgba(255,76,106,.07);border-color:rgba(255,76,106,.2);color:var(--rd)}
+.tag.y{background:rgba(255,209,102,.07);border-color:rgba(255,209,102,.2);color:var(--yw)}
+.tag.b{background:rgba(0,212,255,.07);border-color:rgba(0,212,255,.2);color:var(--cy)}
+
+/* ALGO EXPLANATION STEPS */
+.algo-steps{margin-top:8px;display:flex;flex-direction:column;gap:3px}
+.algo-step{display:flex;align-items:flex-start;gap:7px;font:400 9.5px var(--mono);color:var(--mut);padding:4px 6px;border-radius:5px;line-height:1.5;transition:background .2s,color .2s}
+.algo-step.active{background:rgba(245,158,11,.1);color:var(--yw);border-left:2px solid var(--yw)}
+.algo-step.done{color:rgba(62,255,160,.6)}
+.step-num{font-weight:700;color:var(--dim);min-width:14px;flex-shrink:0}
+
+/* COLOR KEY */
+.color-key{display:flex;flex-direction:column;gap:5px}
+.ck-row{display:flex;align-items:center;gap:8px;font:500 10px var(--mono);color:var(--mut)}
+.ck-swatch{width:28px;height:12px;border-radius:3px;flex-shrink:0}
+.ck-count{margin-left:auto;font-weight:700;color:var(--txt);font-size:10px}
+
+/* EDITABLE INPUT PANEL */
+.edit-panel{background:var(--s3);border-radius:7px;padding:10px 11px;border:1px solid rgba(255,255,255,.06);margin-top:2px}
+.edit-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;font:500 10px var(--mono)}
+.edit-row:last-child{margin-bottom:0}
+.edit-lbl{color:var(--mut);min-width:80px}
+.edit-inp{background:var(--s2);border:1px solid var(--bd2);border-radius:5px;color:var(--txt);font:500 11px var(--mono);padding:3px 8px;width:100%;outline:none}
+.edit-inp:focus{border-color:var(--cy)}
+
+/* LOG */
+.log{flex:1;overflow-y:auto;padding:7px 12px;display:flex;flex-direction:column;gap:2px}
+.le{font:400 9.5px var(--mono);color:var(--mut);padding:2px 5px;border-radius:4px;line-height:1.5}
+.le.ok{color:var(--gn);background:rgba(62,255,160,.05);border-left:2px solid rgba(62,255,160,.3)}
+.le.err{color:var(--rd);background:rgba(255,76,106,.05);border-left:2px solid rgba(255,76,106,.3)}
+.le.hi{color:var(--cy);border-left:2px solid rgba(0,212,255,.25)}
+.le.fr{color:var(--frontier);background:rgba(245,158,11,.04);border-left:2px solid rgba(245,158,11,.3)}
+.le.vis{color:var(--visited);background:rgba(59,130,246,.04);border-left:2px solid rgba(59,130,246,.3)}
+
+/* SUCCESS FLASH */
+@keyframes flash{0%{opacity:1}50%{opacity:.4}100%{opacity:1}}
+.flash{animation:flash .4s ease 3}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.03)}}
+
+::-webkit-scrollbar{width:3px;height:3px}
+::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:4px}
+#extra-tools{display:flex;align-items:center;gap:6px}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand"><span class="brand-ss">StateSpace</span><span class="brand-ex">EXPO</span></div>
+  <div class="topbar-sep"></div>
+  <div class="topbar-desc">AI Search &amp; Problem Solving Visualizer</div>
+  <div class="topbar-sep"></div>
+  <!-- GLOBAL COLOR LEGEND -->
+  <div class="tl">
+    <div class="tli"><div class="tld" style="background:#8b5cf6;box-shadow:0 0 5px #8b5cf6"></div>Start</div>
+    <div class="tli"><div class="tld" style="background:#ef4444;box-shadow:0 0 5px #ef4444"></div>Goal</div>
+    <div class="tli"><div class="tld" style="background:#f59e0b;box-shadow:0 0 5px #f59e0b"></div>Frontier</div>
+    <div class="tli"><div class="tld" style="background:#3b82f6;box-shadow:0 0 5px #3b82f6"></div>Visited</div>
+    <div class="tli"><div class="tld" style="background:#10b981;box-shadow:0 0 5px #10b981"></div>Path</div>
+  </div>
+  <div class="sp"></div>
+  <button class="sound-btn" id="sound-btn" onclick="toggleSound()" title="Toggle sound">🔊</button>
+</div>
+
+<div class="body">
+  <div class="sidebar" id="sidebar"></div>
+  <div class="main">
+    <div class="toolbar">
+      <span class="tb-title" id="tb-title">—</span>
+      <div class="tb-sep"></div>
+      <select class="sel" id="algo-sel" onchange="onAlgoChange()"></select>
+      <button class="btn run" id="run-btn" onclick="doRun()">▶ Run</button>
+      <button class="btn" onclick="doReset()">↺ Reset</button>
+      <button class="btn warn" onclick="doClear()">✕ Clear</button>
+      <div id="extra-tools"></div>
+      <div class="sp"></div>
+      <div class="speed-wrap">
+        <span style="font:500 10px var(--mono);color:var(--mut)">Speed</span>
+        <input type="range" min="1" max="5" value="3" id="spd" oninput="setSpeed(this.value)">
+        <span class="speed-lbl" id="spd-lbl">Med</span>
+      </div>
+      <span class="step-pill" id="step-pill">Steps: 0</span>
+    </div>
+
+    <div class="workspace">
+      <!-- CANVAS + STATUS -->
+      <div class="canvas-wrap">
+        <div class="canvas-area" id="canvas-area"><canvas id="cv"></canvas></div>
+        <div class="status-bar">
+          <div class="phase-dot" id="phase-dot" style="background:var(--mut)"></div>
+          <span class="phase-txt" id="phase-txt" style="color:var(--mut)">READY</span>
+          <span class="status-msg" id="status-msg">Select an algorithm and click ▶ Run</span>
+          <div class="sc-row">
+            <div class="sc"><div class="sc-v" id="sc0">0</div><div class="sc-k">Visited</div></div>
+            <div class="sc"><div class="sc-v" id="sc1">0</div><div class="sc-k">Frontier</div></div>
+            <div class="sc"><div class="sc-v" id="sc2">—</div><div class="sc-k">Result</div></div>
+            <div class="sc"><div class="sc-v" id="sc3">0ms</div><div class="sc-k">Time</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT PANEL -->
+      <div class="info">
+        <!-- ALGO INFO + EXPLANATION -->
+        <div class="ip-sec">
+          <div class="ip-lbl">Algorithm</div>
+          <div id="algo-mount"></div>
+        </div>
+        <!-- ALGO STEP-BY-STEP EXPLANATION -->
+        <div class="ip-sec" id="algo-steps-sec">
+          <div class="ip-lbl">How It Works</div>
+          <div class="algo-steps" id="algo-steps"></div>
+        </div>
+        <!-- COLOR KEY with live counts -->
+        <div class="ip-sec">
+          <div class="ip-lbl">Color Key</div>
+          <div class="color-key">
+            <div class="ck-row"><div class="ck-swatch" style="background:#8b5cf6;box-shadow:0 0 6px #8b5cf655"></div>Start node<span class="ck-count" id="ck0">—</span></div>
+            <div class="ck-row"><div class="ck-swatch" style="background:#ef4444;box-shadow:0 0 6px #ef444455"></div>Goal node<span class="ck-count" id="ck1">—</span></div>
+            <div class="ck-row"><div class="ck-swatch" style="background:#f59e0b;box-shadow:0 0 6px #f59e0b55"></div>Frontier (queue/stack)<span class="ck-count" id="ck2">0</span></div>
+            <div class="ck-row"><div class="ck-swatch" style="background:#3b82f6;box-shadow:0 0 6px #3b82f655"></div>Visited (explored)<span class="ck-count" id="ck3">0</span></div>
+            <div class="ck-row"><div class="ck-swatch" style="background:#10b981;box-shadow:0 0 6px #10b98155"></div>Path (solution)<span class="ck-count" id="ck4">—</span></div>
+          </div>
+        </div>
+        <!-- EDITABLE INPUTS -->
+        <div class="ip-sec">
+          <div class="ip-lbl">Edit Inputs</div>
+          <div id="edit-mount"></div>
+        </div>
+        <!-- PROBLEM DESC -->
+        <div class="ip-sec">
+          <div class="ip-lbl">Problem</div>
+          <div id="prob-mount"></div>
+        </div>
+        <!-- LOG -->
+        <div class="ip-sec" style="border:none;padding-bottom:4px">
+          <div class="ip-lbl">Log</div>
+        </div>
+        <div class="log" id="log"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+// ═══════════════════════════════════════════════
+//  GLOBALS
+// ═══════════════════════════════════════════════
+const cv=document.getElementById('cv');
+const ctx=cv.getContext('2d');
+let CUR='maze',DELAY=30,STEPS=0,TIMERS=[],BUSY=false;
+let SOUND_ON=true;
+let VIS_COUNT=0,FRT_COUNT=0;
+
+// ── AUDIO ENGINE ─────────────────────────────────
+const AC=new (window.AudioContext||window.webkitAudioContext)();
+function beep(freq,dur,type='sine',vol=0.18){
+  if(!SOUND_ON) return;
+  try{
+    const o=AC.createOscillator(),g=AC.createGain();
+    o.connect(g);g.connect(AC.destination);
+    o.type=type;o.frequency.setValueAtTime(freq,AC.currentTime);
+    g.gain.setValueAtTime(vol,AC.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001,AC.currentTime+dur);
+    o.start();o.stop(AC.currentTime+dur);
+  }catch(e){}
+}
+function playSuccess(){
+  if(!SOUND_ON) return;
+  [523,659,784,1047].forEach((f,i)=>setTimeout(()=>beep(f,.18,'sine',.2),i*90));
+}
+function playStep(){ beep(440,.04,'sine',.04); }
+function playFrontier(){ beep(330,.03,'sine',.03); }
+function playFail(){ beep(200,.4,'sawtooth',.12); }
+function toggleSound(){
+  SOUND_ON=!SOUND_ON;
+  document.getElementById('sound-btn').textContent=SOUND_ON?'🔊':'🔇';
+  if(SOUND_ON) AC.resume();
+}
+
+// ── SPEED ─────────────────────────────────────────
+const SPD_LBL={1:'Slow',2:'Slow+',3:'Med',4:'Fast',5:'Instant'};
+const SPD_DLY={1:180,2:70,3:28,4:8,5:1};
+function setSpeed(v){DELAY=SPD_DLY[v];document.getElementById('spd-lbl').textContent=SPD_LBL[v];}
+
+// ── STATUS BAR ────────────────────────────────────
+const PHASE_COLORS={ready:'#5a5a8a',running:'#f59e0b',frontier:'#f59e0b',visited:'#3b82f6',path:'#10b981',done:'#10b981',error:'#ef4444'};
+const PHASE_LABELS={ready:'READY',running:'RUNNING',frontier:'FRONTIER',visited:'EXPLORING',path:'PATH FOUND',done:'DONE',error:'FAILED'};
+function setPhase(ph,msg){
+  const c=PHASE_COLORS[ph]||'#5a5a8a',l=PHASE_LABELS[ph]||ph.toUpperCase();
+  const dot=document.getElementById('phase-dot'),txt=document.getElementById('phase-txt');
+  dot.style.background=c; dot.style.boxShadow=`0 0 8px ${c}`;
+  txt.textContent=l; txt.style.color=c;
+  if(msg) document.getElementById('status-msg').textContent=msg;
+}
+
+// ── STATS ─────────────────────────────────────────
+function setSC(i,v){document.getElementById('sc'+i).textContent=v;}
+function setCK(i,v){document.getElementById('ck'+i).textContent=v;}
+function resetStats(){
+  [0,1,2,3].forEach(i=>setSC(i,[0,0,'—','0ms'][i]));
+  VIS_COUNT=0;FRT_COUNT=0;
+  setCK(2,0);setCK(3,0);setCK(4,'—');
+}
+
+// ── LOG ───────────────────────────────────────────
+function log(msg,cls=''){
+  const d=document.getElementById('log');
+  const el=document.createElement('div');
+  el.className='le '+(cls||'');
+  el.textContent=msg;
+  d.appendChild(el);d.scrollTop=d.scrollHeight;
+  while(d.children.length>100) d.removeChild(d.firstChild);
+}
+function clearLog(){document.getElementById('log').innerHTML='';}
+
+// ── STEP COUNTER ──────────────────────────────────
+function incStep(){STEPS++;document.getElementById('step-pill').textContent='Steps: '+STEPS;}
+function resetSteps(){STEPS=0;document.getElementById('step-pill').textContent='Steps: 0';}
+
+// ── ANIMATE ───────────────────────────────────────
+function stopAll(){TIMERS.forEach(t=>clearTimeout(t));TIMERS=[];BUSY=false;document.getElementById('run-btn').disabled=false;}
+function animate(steps,fn,done){
+  stopAll();
+  if(!steps.length){if(done)done();return;}
+  BUSY=true;document.getElementById('run-btn').disabled=true;
+  const t0=performance.now();
+  steps.forEach((s,i)=>{
+    const t=setTimeout(()=>{
+      fn(s,i);incStep();
+      if(i===steps.length-1){
+        setSC(3,Math.round(performance.now()-t0)+'ms');
+        BUSY=false;document.getElementById('run-btn').disabled=false;
+        if(done)done();
+      }
+    },i*DELAY);
+    TIMERS.push(t);
+  });
+}
+
+// ═══════════════════════════════════════════════
+//  ALGO STEP EXPLANATIONS
+// ═══════════════════════════════════════════════
+const ALGO_STEPS={
+  'BFS':[
+    'Add Start node to Queue (FIFO)',
+    'Dequeue front node → mark VISITED (blue)',
+    'If node = Goal → trace path back ✓',
+    'Add all unvisited neighbors to Queue (amber)',
+    'Repeat — explores level by level outward',
+  ],
+  'DFS':[
+    'Push Start node onto Stack (LIFO)',
+    'Pop top node → mark VISITED (blue)',
+    'If node = Goal → trace path back ✓',
+    'Push all unvisited neighbors onto Stack (amber)',
+    'Repeat — dives deep before backtracking',
+  ],
+  'A*':[
+    'Add Start to priority queue with f=0',
+    'Pop node with lowest f = g(cost) + h(heuristic)',
+    'If node = Goal → trace path back ✓',
+    'For each neighbor compute g+1 and h=Manhattan dist',
+    'If cheaper path found → update and push (amber)',
+    'Repeat — always expands most promising node',
+  ],
+  'Greedy':[
+    'Add Start to priority queue',
+    'Pop node with lowest h(n) = heuristic to goal',
+    'If node = Goal → done ✓',
+    'Add unvisited neighbors sorted by h(n) (amber)',
+    'Ignores actual cost — may miss optimal path',
+  ],
+  'UCS':[
+    'Add Start to priority queue with cost g=0',
+    'Pop node with lowest total cost g(n)',
+    'If node = Goal → optimal path found ✓',
+    'Add neighbors with updated g costs (amber)',
+    'Guarantees cheapest path — like Dijkstra',
+  ],
+  'Dijkstra':[
+    'Set dist[Start]=0, all others = ∞',
+    'Pop node with min distance from priority queue',
+    'If node = Goal → shortest path found ✓',
+    'Relax edges: if dist[u]+w < dist[v], update (amber)',
+    'All edge weights honored — optimal result',
+  ],
+  'DLS':[
+    'DFS with a maximum depth limit L=4',
+    'Push Start onto Stack with depth=0',
+    'Pop node → visit (blue)',
+    'Only expand neighbors if depth < L',
+    'If depth=L and not goal → stop that branch',
+  ],
+  'IDA*':[
+    'Set initial threshold = h(Start)',
+    'Run DFS — only expand if f ≤ threshold',
+    'If Goal found within threshold → done ✓',
+    'Else: set threshold = min f that exceeded it',
+    'Repeat with new threshold — uses O(d) memory',
+  ],
+  'Minimax':[
+    'MAX node (AI) picks move with highest score',
+    'MIN node (opponent) picks lowest score',
+    'Recursively evaluate all game tree states',
+    'Terminal states scored: win=+10, loss=-10, draw=0',
+    'Backpropagate scores up the tree',
+  ],
+  'Alpha-Beta':[
+    'Same as Minimax but track α (MAX best) and β (MIN best)',
+    'At MAX node: if score ≥ β → prune branch (β-cutoff)',
+    'At MIN node: if score ≤ α → prune branch (α-cutoff)',
+    'Pruned branches cannot affect final result',
+    'Reduces nodes from b^m to ~b^(m/2)',
+  ],
+  'Backtracking':[
+    'Assign a value to first variable',
+    'Check constraints with assigned variables',
+    'If conflict → backtrack to previous variable',
+    'Try next value in domain',
+    'If all domains exhausted → no solution',
+  ],
+  'Fwd Checking':[
+    'Assign value to current variable',
+    'Remove that value from neighbors\' domains (forward)',
+    'If any neighbor domain becomes empty → backtrack early',
+    'Otherwise continue to next variable',
+    'Domain pruning avoids wasted search paths',
+  ],
+  'Nearest':[
+    'Start at city A',
+    'Find nearest unvisited city (amber = current candidate)',
+    'Travel to that city → add to tour (green)',
+    'Repeat until all cities visited',
+    'Return home to complete the tour',
+  ],
+};
+
+let ACTIVE_STEP=-1;
+function setAlgoStep(i){
+  if(i===ACTIVE_STEP) return;
+  ACTIVE_STEP=i;
+  document.querySelectorAll('.algo-step').forEach((el,j)=>{
+    el.classList.remove('active','done');
+    if(j<i) el.classList.add('done');
+    else if(j===i) el.classList.add('active');
+  });
+}
+function resetAlgoSteps(){ACTIVE_STEP=-1;document.querySelectorAll('.algo-step').forEach(el=>el.classList.remove('active','done'));}
+
+// ═══════════════════════════════════════════════
+//  PROBLEM REGISTRY
+// ═══════════════════════════════════════════════
+const PROBS={
+  maze:        {label:'Maze Pathfinding',   icon:'🧩',tag:'State Space',  unit:1},
+  missionaries:{label:'Missionaries & C.', icon:'🚣',tag:'Real Problem', unit:1},
+  tsp:         {label:'Traveling Salesman', icon:'🗺️',tag:'Optimization', unit:1},
+  tictactoe:   {label:'Tic-Tac-Toe',       icon:'❌',tag:'Toy Problem',  unit:1},
+  graphsearch: {label:'Graph Search',      icon:'🕸️',tag:'Search Algos', unit:2},
+  searchtree:  {label:'Search Tree',       icon:'🌲',tag:'Frontier Viz', unit:2},
+  nqueens:     {label:'N-Queens (CSP)',    icon:'♛', tag:'CSP',          unit:3},
+  mapcolor:    {label:'Map Coloring',      icon:'🗾',tag:'CSP/Rooms',    unit:3},
+  tictactoe3:  {label:'Minimax / α-β',     icon:'🎮',tag:'Adversarial',  unit:3},
+};
+
+const PROB_ALGOS={
+  maze:        ['BFS','DFS','A*','Greedy','UCS'],
+  missionaries:['BFS','DFS'],
+  tsp:         ['Nearest'],
+  tictactoe:   ['Minimax','Alpha-Beta'],
+  graphsearch: ['BFS','DFS','Dijkstra','A*','DLS','IDA*'],
+  searchtree:  ['BFS','DFS','Greedy'],
+  nqueens:     ['Backtracking','Fwd Checking'],
+  mapcolor:    ['Backtracking','Fwd Checking'],
+  tictactoe3:  ['Minimax','Alpha-Beta'],
+};
+
+const PROB_DESC={
+  maze:        'Grid cells = states. Walls block transitions. Find path from purple Start → red Goal. Draw walls by click/drag. Right-click to erase.',
+  missionaries:'3 missionaries + 3 cannibals cross a river. Boat holds 1–2. Cannibals must never outnumber missionaries. State=(M_left,C_left,boat_side).',
+  tsp:         'Visit all cities once, return home with minimum distance. NP-Hard. Drag cities to reposition. Click empty space to add (max 12).',
+  tictactoe:   'Toy Problem. Click to play as X. AI plays O using Minimax or Alpha-Beta. Shows nodes evaluated and branches pruned.',
+  graphsearch: 'Weighted graph. Click a node to set Source → then Destination. Compare how BFS, Dijkstra, A* explore differently.',
+  searchtree:  'Random branching tree. BFS fills level-by-level (wide amber frontier). DFS dives deep (thin frontier). Node G is the goal.',
+  nqueens:     'Place N queens so none attack each other. Compare Backtracking (brute-force) vs Forward Checking (domain pruning). Adjust board size.',
+  mapcolor:    'Color 7 rooms so no adjacent rooms share a color — straight from Unit 3 Room Colouring CSP.',
+  tictactoe3:  'Full Minimax game tree for Tic-Tac-Toe. Alpha-Beta version shows pruned branches vs visited nodes.',
+};
+
+const ALGO_INFO={
+  'BFS':       {name:'Breadth-First Search',    color:'#00d4ff',desc:'Queue (FIFO). Explores level by level. Guarantees shortest path on unweighted graphs.',tc:'O(V+E)',sc:'O(V)',opt:true,comp:true},
+  'DFS':       {name:'Depth-First Search',      color:'#ff9f43',desc:'Stack (LIFO). Dives deep before backtracking. Memory-efficient but not always optimal.',tc:'O(V+E)',sc:'O(V)',opt:false,comp:true},
+  'A*':        {name:'A* Search',               color:'#3effa0',desc:'f(n)=g(n)+h(n). Path cost + Manhattan heuristic. Optimal when h is admissible.',tc:'O(b^d)',sc:'O(b^d)',opt:true,comp:true},
+  'Greedy':    {name:'Greedy Best-First',       color:'#ffd166',desc:'Only uses h(n). Rushes toward goal ignoring cost. Fast but not optimal.',tc:'O(b^m)',sc:'O(b^m)',opt:false,comp:false},
+  'UCS':       {name:'Uniform Cost Search',     color:'#6c63ff',desc:'Priority queue on g(n). Equivalent to Dijkstra. Optimal for non-negative costs.',tc:'O(V+E)',sc:'O(V)',opt:true,comp:true},
+  'Dijkstra':  {name:"Dijkstra's Algorithm",   color:'#6c63ff',desc:'Classic weighted shortest-path via min-heap. Relaxes edges iteratively.',tc:'O((V+E)logV)',sc:'O(V)',opt:true,comp:true},
+  'DLS':       {name:'Depth-Limited Search',    color:'#ff6b9d',desc:'DFS capped at depth limit L=4. Prevents infinite loops.',tc:'O(b^L)',sc:'O(bL)',opt:false,comp:false},
+  'IDA*':      {name:'Iterative Deepening A*', color:'#ffd166',desc:'A* + DFS memory. Iterates f-cost thresholds. Uses O(d) space.',tc:'O(b^d)',sc:'O(d)',opt:true,comp:true},
+  'Minimax':   {name:'Minimax Algorithm',       color:'#ff6b9d',desc:'MAX picks highest score, MIN picks lowest. Full game tree evaluation.',tc:'O(b^m)',sc:'O(bm)',opt:true,comp:true},
+  'Alpha-Beta':{name:'Alpha-Beta Pruning',      color:'#ff4c6a',desc:'Minimax + pruning. α=MAX guarantee, β=MIN guarantee. Prunes when α≥β.',tc:'O(b^m/2)',sc:'O(bm)',opt:true,comp:true},
+  'Backtracking':{name:'Backtracking CSP',      color:'#ff6b9d',desc:'Assigns values one by one, backtracks on conflicts. No look-ahead.',tc:'O(d^n)',sc:'O(n)',opt:true,comp:true},
+  'Fwd Checking':{name:'Forward Checking',      color:'#ffd166',desc:'Prunes future variable domains after each assignment. Early backtrack.',tc:'O(d^n)',sc:'O(n²)',opt:true,comp:true},
+  'Nearest':   {name:'Greedy Nearest Neighbor', color:'#ffd166',desc:'Always go to nearest unvisited city. Fast heuristic, rarely optimal.',tc:'O(n²)',sc:'O(n)',opt:false,comp:true},
+};
+
+// ═══════════════════════════════════════════════
+//  SIDEBAR
+// ═══════════════════════════════════════════════
+function buildSidebar(){
+  const sb=document.getElementById('sidebar');
+  sb.innerHTML='';
+  const groups={1:[],2:[],3:[]};
+  Object.entries(PROBS).forEach(([k,p])=>groups[p.unit].push(k));
+  const glabels={1:'Unit 1 — Intro to AI',2:'Unit 2 — Search Algos',3:'Unit 3 — Adversarial & CSP'};
+  [1,2,3].forEach(u=>{
+    const lbl=document.createElement('div');lbl.className='sb-label';lbl.textContent=glabels[u];sb.appendChild(lbl);
+    groups[u].forEach(k=>{
+      const p=PROBS[k];
+      const btn=document.createElement('button');
+      btn.className='sb-btn'+(k===CUR?' active':'');btn.id='sb-'+k;
+      btn.onclick=()=>switchTo(k);
+      btn.innerHTML=`<div class="sb-icon">${p.icon}</div><div class="sb-meta"><div class="sb-name">${p.label}</div><div class="sb-tag">${p.tag}</div></div>`;
+      sb.appendChild(btn);
+    });
+  });
+}
+
+// ═══════════════════════════════════════════════
+//  SWITCH PROBLEM
+// ═══════════════════════════════════════════════
+function switchTo(key){
+  stopAll();clearLog();resetSteps();resetStats();resetAlgoSteps();
+  setPhase('ready','Select an algorithm and click ▶ Run');
+  document.querySelectorAll('.sb-btn').forEach(b=>b.classList.remove('active'));
+  const sb=document.getElementById('sb-'+key);if(sb)sb.classList.add('active');
+  CUR=key;
+  document.getElementById('tb-title').textContent=PROBS[key].label;
+  const sel=document.getElementById('algo-sel');
+  sel.innerHTML=PROB_ALGOS[key].map(a=>`<option value="${a}">${a}</option>`).join('');
+  document.getElementById('extra-tools').innerHTML='';
+  updateInfoPanel();
+  MODULES[key].init();
+}
+
+function onAlgoChange(){updateInfoPanel();stopAll();MODULES[CUR].reset();}
+
+function updateInfoPanel(){
+  const algo=document.getElementById('algo-sel').value;
+  const info=ALGO_INFO[algo]||{name:algo,color:'var(--cy)',desc:'',tc:'—',sc:'—',opt:false,comp:false};
+  document.getElementById('algo-mount').innerHTML=`
+    <div class="acard">
+      <div class="acard-name" style="color:${info.color}">${info.name}</div>
+      <div class="acard-desc">${info.desc}</div>
+      <div class="tags">
+        <span class="tag y">⏱ ${info.tc}</span>
+        <span class="tag b">💾 ${info.sc}</span>
+        <span class="tag ${info.opt?'g':'r'}">${info.opt?'✓ Optimal':'✗ Optimal'}</span>
+        <span class="tag ${info.comp?'g':'r'}">${info.comp?'✓ Complete':'✗ Complete'}</span>
+      </div>
+    </div>`;
+  // STEP-BY-STEP EXPLANATION
+  const steps=ALGO_STEPS[algo]||[];
+  const el=document.getElementById('algo-steps');
+  el.innerHTML=steps.map((s,i)=>`<div class="algo-step"><span class="step-num">${i+1}</span>${s}</div>`).join('');
+  // PROBLEM DESC
+  document.getElementById('prob-mount').innerHTML=`
+    <div class="acard" style="background:var(--s3)">
+      <div style="font-size:10px;color:var(--mut);line-height:1.7">${PROB_DESC[CUR]}</div>
+    </div>`;
+  // EDIT PANEL — problem specific
+  buildEditPanel(CUR);
+}
+
+// ═══════════════════════════════════════════════
+//  EDITABLE INPUT PANELS
+// ═══════════════════════════════════════════════
+function buildEditPanel(prob){
+  const m=document.getElementById('edit-mount');
+  if(prob==='maze'){
+    m.innerHTML=`<div class="edit-panel">
+      <div class="edit-row"><span class="edit-lbl">Grid size</span>
+        <select class="edit-inp" style="width:auto" onchange="MODULES.maze.resize(parseInt(this.value))">
+          <option value="16">16×16</option><option value="22" selected>22×22</option>
+          <option value="30">30×30</option><option value="40">40×40</option>
+        </select>
+      </div>
+      <div class="edit-row"><span class="edit-lbl">Draw mode</span>
+        <select class="edit-inp" style="width:auto" id="draw-tool" onchange="MODULES.maze.setTool(this.value)">
+          <option value="wall">🧱 Wall</option><option value="erase">◻ Erase</option>
+          <option value="start">🟢 Start</option><option value="end">🔴 End</option>
+        </select>
+      </div>
+    </div>`;
+  } else if(prob==='tsp'){
+    m.innerHTML=`<div class="edit-panel">
+      <div class="edit-row"><span class="edit-lbl">City count</span>
+        <select class="edit-inp" style="width:auto" onchange="MODULES.tsp.setCount(parseInt(this.value))">
+          <option value="5">5 cities</option><option value="8" selected>8 cities</option>
+          <option value="10">10 cities</option><option value="12">12 cities</option>
+        </select>
+      </div>
+      <div class="edit-row" style="font:400 9px var(--mono);color:var(--mut)">Drag cities to move them</div>
+    </div>`;
+  } else if(prob==='nqueens'){
+    m.innerHTML=`<div class="edit-panel">
+      <div class="edit-row"><span class="edit-lbl">Board N</span>
+        <select class="edit-inp" style="width:auto" onchange="MODULES.nqueens.setN(parseInt(this.value))">
+          <option value="6">6×6</option><option value="8" selected>8×8</option>
+          <option value="10">10×10</option><option value="12">12×12</option>
+        </select>
+      </div>
+    </div>`;
+  } else if(prob==='graphsearch'){
+    m.innerHTML=`<div class="edit-panel">
+      <div class="edit-row" style="font:400 9px var(--mono);color:var(--mut)">Click any node → set Source, then click another → set Destination</div>
+      <div class="edit-row"><span class="edit-lbl">New graph</span>
+        <button class="btn" style="font-size:10px;padding:2px 8px" onclick="MODULES.graphsearch.newRand(8)">🎲 8 nodes</button>
+        <button class="btn" style="font-size:10px;padding:2px 8px" onclick="MODULES.graphsearch.newRand(12)">🎲 12 nodes</button>
+      </div>
+    </div>`;
+  } else if(prob==='searchtree'){
+    m.innerHTML=`<div class="edit-panel">
+      <div class="edit-row"><span class="edit-lbl">New tree</span>
+        <button class="btn" style="font-size:10px;padding:2px 8px" onclick="MODULES.searchtree.rebuild()">🔀 Randomize</button>
+      </div>
+      <div class="edit-row" style="font:400 9px var(--mono);color:var(--mut)">Use toolbar dropdowns to change depth and branching factor</div>
+    </div>`;
+  } else {
+    m.innerHTML=`<div class="edit-panel"><div style="font:400 9px var(--mono);color:var(--mut)">Controls for this problem appear in the toolbar above.</div></div>`;
+  }
+}
+
+function doRun(){if(BUSY)return;resetSteps();resetStats();resetAlgoSteps();clearLog();MODULES[CUR].run();}
+function doReset(){stopAll();resetSteps();resetStats();resetAlgoSteps();setPhase('ready','Cleared');MODULES[CUR].reset();}
+function doClear(){stopAll();resetSteps();resetStats();resetAlgoSteps();clearLog();setPhase('ready','Select an algorithm and click ▶ Run');MODULES[CUR].clear();}
+
+// ═══════════════════════════════════════════════
+//  LIVE COLOR KEY UPDATERS
+// ═══════════════════════════════════════════════
+function addFrontier(n){FRT_COUNT++;setSC(1,FRT_COUNT);setCK(2,FRT_COUNT);}
+function addVisited(n){VIS_COUNT++;setSC(0,VIS_COUNT);setCK(3,VIS_COUNT);}
+function setPathResult(v){setSC(2,v);setCK(4,v);}
+
+// ═══════════════════════════════════════════════
+// ██ MODULE: MAZE
+// ═══════════════════════════════════════════════
+const MAZE=(()=>{
+  let R=22,CC=22,SZ=0,grid=[],cs=[];
+  let sR=0,sC=0,eR=0,eC=0,tool='wall',md=false;
+  const EMPTY=0,WALL=1,START=2,END=3,UNVIS=0,FRONT=1,VIS=2,PATH=3;
+
+  function resize(){
+    const a=document.getElementById('canvas-area');
+    SZ=Math.max(8,Math.floor(Math.min((a.clientWidth-28)/CC,(a.clientHeight-28)/R)));
+    cv.width=SZ*CC;cv.height=SZ*R;
+  }
+  function makeGrid(){
+    grid=Array.from({length:R},()=>new Uint8Array(CC));
+    cs=Array.from({length:R},()=>new Uint8Array(CC));
+    sR=Math.floor(R/2);sC=2;eR=Math.floor(R/2);eC=CC-3;
+    grid[sR][sC]=START;grid[eR][eC]=END;
+  }
+  function drawCell(r,c){
+    const x=c*SZ,y=r*SZ,g=grid[r][c],s=cs[r][c];
+    // Base background
+    let bg='#0b0b18';
+    if(g===WALL) bg='#1c1c36';
+    else if(g===START) bg='#1a0a3a';
+    else if(g===END)   bg='#3a0a0a';
+    else if(s===PATH)  bg='#052a18';
+    else if(s===VIS)   bg='#071428';
+    else if(s===FRONT) bg='#1a1200';
+    ctx.fillStyle=bg;ctx.fillRect(x+.5,y+.5,SZ-1,SZ-1);
+    // Vivid color overlays for states
+    if(s===FRONT&&g!==START&&g!==END){
+      ctx.fillStyle='rgba(245,158,11,0.7)';
+      ctx.fillRect(x+1,y+1,SZ-2,SZ-2);
+    }
+    if(s===VIS&&g!==START&&g!==END){
+      ctx.fillStyle='rgba(59,130,246,0.55)';
+      ctx.fillRect(x+1,y+1,SZ-2,SZ-2);
+    }
+    if(s===PATH&&g!==START&&g!==END){
+      ctx.fillStyle='rgba(16,185,129,0.85)';
+      ctx.fillRect(x+SZ*.08,y+SZ*.08,SZ*.84,SZ*.84);
+    }
+    // Glowing start/end dots
+    if(g===START){
+      ctx.shadowColor='#8b5cf6';ctx.shadowBlur=SZ*.6;
+      ctx.fillStyle='#8b5cf6';ctx.beginPath();ctx.arc(x+SZ/2,y+SZ/2,SZ*.32,0,Math.PI*2);ctx.fill();
+      ctx.shadowBlur=0;
+    }
+    if(g===END){
+      ctx.shadowColor='#ef4444';ctx.shadowBlur=SZ*.6;
+      ctx.fillStyle='#ef4444';ctx.beginPath();ctx.arc(x+SZ/2,y+SZ/2,SZ*.32,0,Math.PI*2);ctx.fill();
+      ctx.shadowBlur=0;
+    }
+  }
+  function drawAll(){
+    ctx.fillStyle='#06060f';ctx.fillRect(0,0,cv.width,cv.height);
+    for(let r=0;r<R;r++) for(let c=0;c<CC;c++) drawCell(r,c);
+  }
+  function clearVis(){for(let r=0;r<R;r++) for(let c=0;c<CC;c++) if(cs[r][c]){cs[r][c]=UNVIS;drawCell(r,c);}}
+  function getRC(e){
+    const b=cv.getBoundingClientRect(),sx=cv.width/b.width,sy=cv.height/b.height;
+    const c=Math.floor(((e.clientX-b.left)*sx)/SZ),r=Math.floor(((e.clientY-b.top)*sy)/SZ);
+    return(r>=0&&r<R&&c>=0&&c<CC)?{r,c}:null;
+  }
+  function applyTool(rc){
+    if(!rc)return;const{r,c}=rc,g=grid[r][c];
+    if(tool==='wall'&&g!==START&&g!==END){grid[r][c]=WALL;drawCell(r,c);}
+    else if(tool==='erase'&&g!==START&&g!==END){grid[r][c]=EMPTY;cs[r][c]=UNVIS;drawCell(r,c);}
+    else if(tool==='start'&&g!==END){grid[sR][sC]=EMPTY;drawCell(sR,sC);sR=r;sC=c;grid[r][c]=START;drawCell(r,c);}
+    else if(tool==='end'&&g!==START){grid[eR][eC]=EMPTY;drawCell(eR,eC);eR=r;eC=c;grid[r][c]=END;drawCell(r,c);}
+  }
+  cv.addEventListener('mousedown',e=>{if(CUR!=='maze'||BUSY)return;md=true;applyTool(getRC(e));});
+  cv.addEventListener('mousemove',e=>{if(!md||CUR!=='maze'||BUSY)return;applyTool(getRC(e));});
+  cv.addEventListener('mouseup',()=>md=false);
+  cv.addEventListener('mouseleave',()=>md=false);
+  cv.addEventListener('contextmenu',e=>{e.preventDefault();if(CUR!=='maze'||BUSY)return;const old=tool;tool='erase';applyTool(getRC(e));tool=old;});
+  function nbrs(r,c){return[[0,1],[1,0],[0,-1],[-1,0]].map(([dr,dc])=>({r:r+dr,c:c+dc})).filter(n=>n.r>=0&&n.r<R&&n.c>=0&&n.c<CC&&grid[n.r][n.c]!==WALL);}
+  function mh(r1,c1,r2,c2){return Math.abs(r1-r2)+Math.abs(c1-c2);}
+  function trace(par,er,ec){const p=[];let k=`${er},${ec}`;while(k){const[r,c]=k.split(',').map(Number);p.unshift({r,c});k=par[k];}return p;}
+  function buildSteps(algo){
+    const sk=`${sR},${sC}`,steps=[],par={[sk]:null};
+    if(algo==='BFS'||algo==='UCS'){
+      const q=[{r:sR,c:sC,g:0}],vis=new Set([sk]);
+      while(q.length){
+        if(algo==='UCS')q.sort((a,b)=>a.g-b.g);
+        const{r,c,g}=q.shift();
+        steps.push({t:'v',r,c});
+        if(r===eR&&c===eC){steps.push({t:'p',path:trace(par,eR,eC)});return steps;}
+        for(const n of nbrs(r,c)){const k=`${n.r},${n.c}`;if(!vis.has(k)){vis.add(k);par[k]=`${r},${c}`;q.push({...n,g:g+1});steps.push({t:'f',r:n.r,c:n.c});}}
+      }
+    } else if(algo==='DFS'){
+      const stk=[{r:sR,c:sC}],vis=new Set([sk]);
+      while(stk.length){
+        const{r,c}=stk.pop();
+        if(vis.has(`${r},${c}`)&&`${r},${c}`!==sk)continue;
+        vis.add(`${r},${c}`);steps.push({t:'v',r,c});
+        if(r===eR&&c===eC){steps.push({t:'p',path:trace(par,eR,eC)});return steps;}
+        for(const n of nbrs(r,c)){const k=`${n.r},${n.c}`;if(!vis.has(k)){par[k]=`${r},${c}`;stk.push(n);steps.push({t:'f',r:n.r,c:n.c});}}
+      }
+    } else {
+      const pq=[],gCost={[sk]:0},vis=new Set();
+      const push=it=>{pq.push(it);pq.sort((a,b)=>a.f-b.f);};
+      push({r:sR,c:sC,f:0,g:0});
+      while(pq.length){
+        const{r,c,g}=pq.shift();const k=`${r},${c}`;
+        if(vis.has(k))continue;vis.add(k);steps.push({t:'v',r,c});
+        if(r===eR&&c===eC){steps.push({t:'p',path:trace(par,eR,eC)});return steps;}
+        for(const n of nbrs(r,c)){
+          const nk=`${n.r},${n.c}`,ng=g+1;
+          if(gCost[nk]===undefined||ng<gCost[nk]){gCost[nk]=ng;par[nk]=k;const h=mh(n.r,n.c,eR,eC);push({r:n.r,c:n.c,f:algo==='A*'?ng+h:h,g:ng});steps.push({t:'f',r:n.r,c:n.c});}
+        }
+      }
+    }
+    steps.push({t:'x'});return steps;
+  }
+  function genMaze(){
+    for(let r=0;r<R;r++) for(let c=0;c<CC;c++) if(grid[r][c]!==START&&grid[r][c]!==END)grid[r][c]=WALL;
+    const vis=new Set(),stk=[{r:1,c:1}];grid[1][1]=EMPTY;vis.add('1,1');
+    while(stk.length){
+      const{r,c}=stk[stk.length-1];
+      const nb=[[-2,0],[2,0],[0,-2],[0,2]].map(([dr,dc])=>({r:r+dr,c:c+dc})).filter(n=>n.r>0&&n.r<R-1&&n.c>0&&n.c<CC-1&&!vis.has(`${n.r},${n.c}`));
+      if(!nb.length){stk.pop();continue;}
+      const nx=nb[Math.floor(Math.random()*nb.length)];
+      grid[(r+nx.r)/2][(c+nx.c)/2]=EMPTY;grid[nx.r][nx.c]=EMPTY;vis.add(`${nx.r},${nx.c}`);stk.push(nx);
+    }
+    grid[sR][sC]=START;grid[eR][eC]=END;
+    [-1,0,1].forEach(dr=>[-1,0,1].forEach(dc=>{
+      const nr=sR+dr,nc=sC+dc;if(nr>=0&&nr<R&&nc>=0&&nc<CC)grid[nr][nc]=EMPTY;
+      const nr2=eR+dr,nc2=eC+dc;if(nr2>=0&&nr2<R&&nc2>=0&&nc2<CC)grid[nr2][nc2]=EMPTY;
+    }));
+    grid[sR][sC]=START;grid[eR][eC]=END;
+    cs=Array.from({length:R},()=>new Uint8Array(CC));drawAll();
+  }
+  function buildExtras(){
+    document.getElementById('extra-tools').innerHTML=`
+      <button class="btn" onclick="MODULES.maze.maze()">⚡ Maze</button>
+      <button class="btn" onclick="MODULES.maze.rand()">🎲 Random</button>`;
+  }
+  return{
+    setTool(t){tool=t;},
+    resize(n){stopAll();R=n;CC=n;resize();makeGrid();drawAll();},
+    maze(){stopAll();clearVis();genMaze();log('Maze generated','hi');},
+    rand(){stopAll();clearVis();for(let r=0;r<R;r++) for(let c=0;c<CC;c++) if(grid[r][c]!==START&&grid[r][c]!==END&&Math.random()<.30)grid[r][c]=WALL;drawAll();log('Random walls placed','hi');},
+    init(){resize();makeGrid();drawAll();buildExtras();log('Draw walls then click ▶ Run','hi');setCK(0,'Set');setCK(1,'Set');},
+    run(){
+      clearVis();
+      const algo=document.getElementById('algo-sel').value;
+      log(`▶ ${algo} from (${sR},${sC}) → (${eR},${eC})`,'hi');
+      setPhase('running',`${algo} searching...`);
+      setAlgoStep(0);
+      const steps=buildSteps(algo);
+      let fi=0;
+      animate(steps,s=>{
+        if(s.t==='f'){
+          if(grid[s.r][s.c]!==START&&grid[s.r][s.c]!==END){cs[s.r][s.c]=FRONT;drawCell(s.r,s.c);}
+          addFrontier();setPhase('frontier',`Adding (${s.r},${s.c}) to frontier`);
+          setAlgoStep(0);playFrontier();
+        }
+        else if(s.t==='v'){
+          if(grid[s.r][s.c]!==START&&grid[s.r][s.c]!==END){cs[s.r][s.c]=VIS;drawCell(s.r,s.c);}
+          addVisited();setPhase('visited',`Visiting (${s.r},${s.c}) — queue/stack shrinks`);
+          setAlgoStep(1);
+          if(VIS_COUNT%15===0){log(`  Visited ${VIS_COUNT} nodes, frontier: ${FRT_COUNT}`,'vis');playStep();}
+        }
+        else if(s.t==='p'){
+          setAlgoStep(2);
+          s.path.forEach((p,i)=>{
+            const tt=setTimeout(()=>{
+              if(grid[p.r][p.c]!==START&&grid[p.r][p.c]!==END){cs[p.r][p.c]=PATH;drawCell(p.r,p.c);}
+              if(i===s.path.length-1){
+                setPathResult(s.path.length+' steps');
+                setPhase('done',`✓ Path found! ${s.path.length} steps, ${VIS_COUNT} nodes visited`);
+                log(`✓ PATH FOUND — ${s.path.length} steps, visited ${VIS_COUNT} nodes`,'ok');
+                playSuccess();
+                // Flash the canvas border
+                cv.style.borderColor='#10b981';cv.style.boxShadow='0 0 24px rgba(16,185,129,.4)';
+                setTimeout(()=>{cv.style.borderColor='';cv.style.boxShadow='';},1800);
+              }
+            },i*16);TIMERS.push(tt);
+          });
+        }
+        else if(s.t==='x'){
+          setPathResult('No path');setPhase('error','No path found — walls block all routes');
+          log('✗ No path found','err');playFail();
+        }
+      });
+    },
+    reset(){clearVis();drawAll();},
+    clear(){makeGrid();drawAll();}
+  };
+})();
+
+// ═══════════════════════════════════════════════
+// ██ MODULE: MISSIONARIES
+// ═══════════════════════════════════════════════
+const MISSIONARIES=(()=>{
+  let sol=[];
+  function resize(){cv.width=600;cv.height=400;}
+  function valid(m,c){
+    if(m<0||c<0||m>3||c>3)return false;
+    if(m>0&&m<c)return false;const mr=3-m,cr=3-c;
+    if(mr>0&&mr<cr)return false;return true;
+  }
+  function solve(useBFS){
+    const start=[3,3,1],gk='0,0,0',moves=[[2,0],[1,1],[1,0],[0,2],[0,1]];
+    if(useBFS){
+      const q=[[start,[start]]],vis=new Set([start.join(',')]);
+      while(q.length){const[state,path]=q.shift();if(state.join(',')===gk)return path;const[m,c,b]=state;
+        moves.forEach(([dm,dc])=>{const nm=m+(b?-dm:dm),nc=c+(b?-dc:dc);if(valid(nm,nc)){const ns=[nm,nc,1-b],nk=ns.join(',');if(!vis.has(nk)){vis.add(nk);q.push([ns,[...path,ns]]);}}});}
+    } else {
+      const stk=[[start,[start]]],vis=new Set([start.join(',')]);
+      while(stk.length){const[state,path]=stk.pop();if(state.join(',')===gk)return path;const[m,c,b]=state;
+        moves.forEach(([dm,dc])=>{const nm=m+(b?-dm:dm),nc=c+(b?-dc:dc);if(valid(nm,nc)){const ns=[nm,nc,1-b],nk=ns.join(',');if(!vis.has(nk)){vis.add(nk);stk.push([ns,[...path,ns]]);}}});}
+    }
+    return null;
+  }
+  function drawState(state,step,total){
+    const[ml,cl,boat]=state,mr=3-ml,cr=3-cl;
+    ctx.fillStyle='#06060f';ctx.fillRect(0,0,600,400);
+    ctx.fillStyle='#060e22';ctx.fillRect(210,55,180,270);
+    for(let i=0;i<9;i++){ctx.strokeStyle=`rgba(59,130,246,${.04+i*.008})`;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(210,75+i*26);ctx.lineTo(390,75+i*26);ctx.stroke();}
+    ctx.fillStyle='#0d1a2e';ctx.fillRect(0,55,210,270);ctx.fillRect(380,55,210,270);
+    ctx.strokeStyle='rgba(255,255,255,.07)';ctx.lineWidth=1;ctx.strokeRect(0,55,210,270);ctx.strokeRect(380,55,210,270);
+    ctx.fillStyle='#5a5a8a';ctx.font='bold 10px JetBrains Mono';ctx.textAlign='center';
+    ctx.fillText('LEFT BANK',105,46);ctx.fillText('RIGHT BANK',490,46);
+    // Boat — amber/frontier color since it's currently being used
+    const bx=boat?228:358;
+    ctx.fillStyle='#1a1200';ctx.fillRect(bx,215,64,30);
+    ctx.shadowColor='#f59e0b';ctx.shadowBlur=8;
+    ctx.strokeStyle='#f59e0b';ctx.lineWidth=2;ctx.strokeRect(bx,215,64,30);
+    ctx.shadowBlur=0;
+    ctx.fillStyle='#f59e0b';ctx.font='bold 9px JetBrains Mono';ctx.textAlign='center';ctx.fillText('BOAT',bx+32,235);
+    function fig(x,y,type){
+      const col=type==='M'?'#3b82f6':'#ef4444';
+      ctx.shadowColor=col;ctx.shadowBlur=5;
+      ctx.fillStyle=col;ctx.beginPath();ctx.arc(x,y,9,0,Math.PI*2);ctx.fill();
+      ctx.shadowBlur=0;
+      ctx.strokeStyle=col;ctx.lineWidth=2;
+      ctx.beginPath();ctx.moveTo(x,y+9);ctx.lineTo(x,y+26);ctx.moveTo(x-10,y+16);ctx.lineTo(x+10,y+16);ctx.moveTo(x,y+26);ctx.lineTo(x-7,y+40);ctx.moveTo(x,y+26);ctx.lineTo(x+7,y+40);ctx.stroke();
+    }
+    for(let i=0;i<ml;i++)fig(28+i*38,115,'M');for(let i=0;i<cl;i++)fig(28+i*38,188,'C');
+    for(let i=0;i<mr;i++)fig(402+i*38,115,'M');for(let i=0;i<cr;i++)fig(402+i*38,188,'C');
+    ctx.font='11px JetBrains Mono';
+    ctx.fillStyle='#3b82f6';ctx.textAlign='left';ctx.fillText(`M: ${ml}`,10,335);
+    ctx.fillStyle='#ef4444';ctx.fillText(`C: ${cl}`,10,355);
+    ctx.fillStyle='#3b82f6';ctx.textAlign='right';ctx.fillText(`M: ${mr}`,590,335);
+    ctx.fillStyle='#ef4444';ctx.fillText(`C: ${cr}`,590,355);
+    ctx.fillStyle='#2e2e58';ctx.textAlign='center';ctx.font='10px JetBrains Mono';ctx.fillText(`Step ${step} / ${total-1}`,300,380);
+    // Valid indicator with color
+    const isValid=(ml===0||ml>=cl)&&(mr===0||mr>=cr);
+    ctx.fillStyle=isValid?'#10b981':'#ef4444';ctx.shadowColor=ctx.fillStyle;ctx.shadowBlur=6;
+    ctx.fillText(isValid?'✓ Valid state':'⚠ Invalid — cannibals outnumber!',300,396);ctx.shadowBlur=0;
+  }
+  return{
+    init(){resize();document.getElementById('extra-tools').innerHTML='';drawState([3,3,1],0,1);log('Click ▶ Run to solve','hi');setCK(0,'(3M,3C,L)');setCK(1,'(0M,0C,R)');},
+    run(){
+      const algo=document.getElementById('algo-sel').value;
+      setPhase('running',`${algo} solving...`);log(`▶ ${algo} on Missionaries & Cannibals`,'hi');
+      setAlgoStep(0);
+      const t0=performance.now();sol=solve(algo==='BFS');
+      if(!sol){log('No solution found','err');setPhase('error','No solution');return;}
+      const elapsed=Math.round(performance.now()-t0);
+      setPathResult((sol.length-1)+' moves');setSC(3,elapsed+'ms');
+      log(`✓ Solution: ${sol.length-1} boat trips`,'ok');
+      sol.forEach((state,i)=>{
+        const tt=setTimeout(()=>{
+          drawState(state,i,sol.length);
+          setSC(0,i+1);setSC(1,sol.length-1-i);incStep();
+          setAlgoStep(Math.min(i,4));
+          setPhase(i===sol.length-1?'done':'running',i===sol.length-1?'All safely crossed! 🎉':`Step ${i+1}: boat on ${state[2]?'left':'right'}`);
+          if(i===sol.length-1){log('✓ All missionaries & cannibals crossed safely!','ok');playSuccess();}
+          else{log(`  State ${i+1}: M_L=${state[0]}, C_L=${state[1]}, boat=${state[2]?'Left':'Right'}`,i%2===0?'vis':'fr');}
+          playStep();
+        },i*600);TIMERS.push(tt);
+      });
+    },
+    reset(){if(sol.length)drawState(sol[0],0,sol.length);else{resize();drawState([3,3,1],0,1);}},
+    clear(){sol=[];resize();drawState([3,3,1],0,1);}
+  };
+})();
+
+// ═══════════════════════════════════════════════
+// ██ MODULE: TSP
+// ═══════════════════════════════════════════════
+const TSP=(()=>{
+  let cities=[],tour=[],bestDist=0,drag=-1,cityCount=8;
+  function resize(){const a=document.getElementById('canvas-area');cv.width=a.clientWidth-28;cv.height=a.clientHeight-28;}
+  function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y);}
+  function tourLen(t){let d=0;for(let i=0;i<t.length;i++)d+=dist(cities[t[i]],cities[t[(i+1)%t.length]]);return d;}
+  function randCities(n){cities=[];for(let i=0;i<n;i++)cities.push({x:80+Math.random()*(cv.width-160),y:70+Math.random()*(cv.height-140),l:String.fromCharCode(65+i)});tour=[];bestDist=0;}
+  function draw(hi=[]){
+    ctx.fillStyle='#06060f';ctx.fillRect(0,0,cv.width,cv.height);
+    if(tour.length>=2){
+      // Completed edges in green (path)
+      ctx.strokeStyle='rgba(16,185,129,.55)';ctx.lineWidth=2;
+      ctx.beginPath();ctx.moveTo(cities[tour[0]].x,cities[tour[0]].y);
+      for(let i=1;i<tour.length;i++)ctx.lineTo(cities[tour[i]].x,cities[tour[i]].y);
+      if(tour.length===cities.length)ctx.closePath();ctx.stroke();
+    }
+    // Highlight current edge being evaluated (amber = frontier)
+    if(hi.length===2){
+      ctx.strokeStyle='rgba(245,158,11,.8)';ctx.lineWidth=3;ctx.setLineDash([6,3]);
+      ctx.shadowColor='#f59e0b';ctx.shadowBlur=8;
+      ctx.beginPath();ctx.moveTo(cities[hi[0]].x,cities[hi[0]].y);ctx.lineTo(cities[hi[1]].x,cities[hi[1]].y);ctx.stroke();
+      ctx.shadowBlur=0;ctx.setLineDash([]);
+    }
+    cities.forEach((c,i)=>{
+      const isHi=hi.includes(i),inTour=tour.includes(i)&&!isHi;
+      const col=isHi?'#f59e0b':inTour?'#10b981':'#3b82f6';
+      ctx.shadowColor=col;ctx.shadowBlur=isHi?14:7;
+      ctx.beginPath();ctx.arc(c.x,c.y,isHi?13:10,0,Math.PI*2);
+      ctx.fillStyle=inTour&&!isHi?'#052a18':'#0c0c22';ctx.fill();
+      ctx.strokeStyle=col;ctx.lineWidth=2.5;ctx.stroke();ctx.shadowBlur=0;
+      ctx.fillStyle='#dde0f5';ctx.font='bold 11px JetBrains Mono';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(c.l,c.x,c.y);
+    });
+    ctx.textBaseline='alphabetic';
+    if(bestDist>0){ctx.fillStyle='#10b981';ctx.font='bold 11px JetBrains Mono';ctx.textAlign='left';ctx.shadowColor='#10b981';ctx.shadowBlur=6;ctx.fillText(`Tour: ${Math.round(bestDist)}px`,12,cv.height-10);ctx.shadowBlur=0;}
+    ctx.fillStyle='#2e2e58';ctx.font='10px JetBrains Mono';ctx.textAlign='right';ctx.fillText('Drag city to move | Click to add',cv.width-10,cv.height-10);
+  }
+  cv.addEventListener('mousedown',e=>{
+    if(CUR!=='tsp')return;
+    const b=cv.getBoundingClientRect(),sx=cv.width/b.width,sy=cv.height/b.height;
+    const mx=(e.clientX-b.left)*sx,my=(e.clientY-b.top)*sy;
+    drag=cities.findIndex(c=>Math.hypot(c.x-mx,c.y-my)<16);
+    if(drag===-1&&cities.length<12){cities.push({x:mx,y:my,l:String.fromCharCode(65+cities.length%26)});tour=[];bestDist=0;draw();}
+  });
+  cv.addEventListener('mousemove',e=>{
+    if(CUR!=='tsp'||drag<0)return;
+    const b=cv.getBoundingClientRect(),sx=cv.width/b.width,sy=cv.height/b.height;
+    cities[drag].x=(e.clientX-b.left)*sx;cities[drag].y=(e.clientY-b.top)*sy;tour=[];bestDist=0;draw();
+  });
+  cv.addEventListener('mouseup',()=>drag=-1);
+  return{
+    setCount(n){cityCount=n;resize();randCities(n);draw();log(`${n} cities placed`,'hi');},
+    init(){resize();document.getElementById('extra-tools').innerHTML=`<button class="btn" onclick="MODULES.tsp.newcities()">🎲 New Cities</button>`;randCities(cityCount);draw();log('Drag cities or click to add. Then ▶ Run.','hi');},
+    newcities(){randCities(cityCount);draw();log('New cities placed','hi');},
+    run(){
+      log(`▶ Greedy nearest-neighbor on ${cities.length} cities`,'hi');
+      setPhase('running','Finding nearest city...');setAlgoStep(0);
+      const steps=[],vis=new Set([0]);let t=[0];steps.push({t:'step',tour:[...t],hi:[0],msg:`Start at ${cities[0].l}`});
+      while(vis.size<cities.length){
+        const last=t[t.length-1];let best=-1,bd=Infinity;
+        cities.forEach((_,i)=>{if(!vis.has(i)){const d=dist(cities[last],cities[i]);if(d<bd){bd=d;best=i;}}});
+        const prev=t[t.length-1];vis.add(best);t.push(best);
+        steps.push({t:'step',tour:[...t],hi:[best,prev],msg:`→ ${cities[best].l} (${Math.round(bd)}px)`});
+      }
+      steps.push({t:'done',tour:[...t],msg:'Tour complete!'});
+      animate(steps,s=>{
+        tour=s.tour;bestDist=tourLen(tour);draw(s.hi||[]);
+        setSC(0,s.tour.length);setSC(2,Math.round(bestDist)+'px');
+        addFrontier();setAlgoStep(Math.min(s.tour.length-1,3));
+        setPhase(s.t==='done'?'done':'frontier',s.msg);
+        log(`  ${s.msg}`,s.t==='done'?'ok':'fr');
+        if(s.t==='done'){playSuccess();setPathResult(Math.round(bestDist)+'px');}
+        else playFrontier();
+      });
+    },
+    reset(){tour=[];bestDist=0;draw();},
+    clear(){randCities(cityCount);draw();}
+  };
+})();
+
+// ═══════════════════════════════════════════════
+// ██ MODULE: TICTACTOE
+// ═══════════════════════════════════════════════
+const TICTACTOE=(()=>{
+  let board=new Array(9).fill(null),over=false,nodes=0,pruned=0;
+  const SZ=420,CELL=140;
+  function resize(){cv.width=SZ;cv.height=SZ+32;}
+  function winner(b){const lines=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];for(const[a,x,y]of lines)if(b[a]&&b[a]===b[x]&&b[x]===b[y])return b[a];return null;}
+  function draw(){
+    ctx.fillStyle='#06060f';ctx.fillRect(0,0,SZ,SZ+32);
+    ctx.strokeStyle='rgba(108,99,255,.25)';ctx.lineWidth=2;
+    [1,2].forEach(i=>{ctx.beginPath();ctx.moveTo(i*CELL,12);ctx.lineTo(i*CELL,SZ-12);ctx.stroke();ctx.beginPath();ctx.moveTo(12,i*CELL);ctx.lineTo(SZ-12,i*CELL);ctx.stroke();});
+    board.forEach((v,i)=>{
+      const r=Math.floor(i/3),c=i%3,cx=c*CELL+CELL/2,cy=r*CELL+CELL/2;
+      if(v==='X'){
+        ctx.shadowColor='#3b82f6';ctx.shadowBlur=14;ctx.strokeStyle='#3b82f6';ctx.lineWidth=9;ctx.lineCap='round';const off=44;
+        ctx.beginPath();ctx.moveTo(cx-off,cy-off);ctx.lineTo(cx+off,cy+off);ctx.stroke();
+        ctx.beginPath();ctx.moveTo(cx+off,cy-off);ctx.lineTo(cx-off,cy+off);ctx.stroke();ctx.shadowBlur=0;
+      } else if(v==='O'){
+        ctx.shadowColor='#ef4444';ctx.shadowBlur=14;ctx.strokeStyle='#ef4444';ctx.lineWidth=9;
+        ctx.beginPath();ctx.arc(cx,cy,44,0,Math.PI*2);ctx.stroke();ctx.shadowBlur=0;
+      }
+    });
+    const w=winner(board);
+    if(w){const lines=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];const wl=lines.find(l=>board[l[0]]&&board[l[0]]===board[l[1]]&&board[l[1]]===board[l[2]]);if(wl){ctx.fillStyle='rgba(16,185,129,.1)';wl.forEach(i=>{const r2=Math.floor(i/3),c2=i%3;ctx.fillRect(c2*CELL,r2*CELL,CELL,CELL);});}}
+    const msg=over?(w?`${w} wins!`:'Draw!'):'Your turn (X)';
+    ctx.fillStyle=over?'#10b981':'#5a5a8a';ctx.shadowColor=over?'#10b981':'transparent';ctx.shadowBlur=over?10:0;
+    ctx.font='bold 15px Outfit';ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillText(msg,SZ/2,SZ+20);ctx.shadowBlur=0;
+    ctx.fillStyle='#2e2e58';ctx.font='10px JetBrains Mono';ctx.textAlign='left';ctx.fillText(`Nodes: ${nodes}  Pruned: ${pruned}`,10,SZ+20);
+  }
+  function minimax(b,isMax,alpha,beta,depth){
+    nodes++;const w=winner(b);
+    if(w==='O')return 10-depth;if(w==='X')return depth-10;if(b.every(v=>v))return 0;
+    const useAB=document.getElementById('algo-sel').value==='Alpha-Beta';
+    if(isMax){let best=-Infinity;for(let i=0;i<9;i++){if(b[i])continue;b[i]='O';best=Math.max(best,minimax(b,false,alpha,beta,depth+1));b[i]=null;if(useAB){alpha=Math.max(alpha,best);if(beta<=alpha){pruned++;break;}}}return best;}
+    else{let best=Infinity;for(let i=0;i<9;i++){if(b[i])continue;b[i]='X';best=Math.min(best,minimax(b,true,alpha,beta,depth+1));b[i]=null;if(useAB){beta=Math.min(beta,best);if(beta<=alpha){pruned++;break;}}}return best;}
+  }
+  function aiMove(){
+    if(over)return;nodes=0;pruned=0;
+    const t0=performance.now();let best=-Infinity,move=-1;
+    for(let i=0;i<9;i++){if(board[i])continue;board[i]='O';const val=minimax(board,false,-Infinity,Infinity,0);board[i]=null;if(val>best){best=val;move=i;}}
+    const elapsed=Math.round(performance.now()-t0);
+    if(move>=0)board[move]='O';const w=winner(board);
+    if(w||board.every(v=>v))over=true;
+    draw();setSC(0,nodes);setSC(1,pruned);setSC(3,elapsed+'ms');setSC(2,best>0?'AI wins':best<0?'You win':'Draw');
+    setPhase(over?'done':'running',`AI→cell ${move+1} | score:${best} nodes:${nodes}`);
+    log(`AI→cell ${move+1} | score:${best} | nodes:${nodes} | pruned:${pruned}`,'ok');
+    setAlgoStep(4);
+    if(over){playSuccess();}
+  }
+  cv.addEventListener('click',e=>{
+    if(CUR!=='tictactoe'&&CUR!=='tictactoe3')return;if(over)return;
+    const b=cv.getBoundingClientRect(),sx=SZ/b.width,sy=(SZ+32)/b.height;
+    const x=(e.clientX-b.left)*sx,y=(e.clientY-b.top)*sy;
+    const idx=Math.floor(y/CELL)*3+Math.floor(x/CELL);
+    if(idx<0||idx>=9||board[idx])return;
+    board[idx]='X';const w=winner(board);
+    if(w||board.every(v=>v)){over=true;draw();setPhase('done',w?'You win!':'Draw!');log(w?'You win!':'Draw!','ok');if(w)playSuccess();return;}
+    draw();setPhase('running','AI thinking...');log(`You played cell ${idx+1}`,'vis');setAlgoStep(0);
+    setTimeout(aiMove,120);
+  });
+  return{
+    init(){resize();board=new Array(9).fill(null);over=false;nodes=0;pruned=0;document.getElementById('extra-tools').innerHTML='';draw();log('Click a cell to play as X. AI plays O.','hi');setCK(0,'X (You)');setCK(1,'O (AI)');},
+    run(){log('Click a cell to make your move!','hi');setPhase('running','Waiting for your move...');},
+    reset(){board=new Array(9).fill(null);over=false;nodes=0;pruned=0;draw();resetStats();},
+    clear(){board=new Array(9).fill(null);over=false;nodes=0;pruned=0;draw();resetStats();}
+  };
+})();
+
+// ═══════════════════════════════════════════════
+// ██ MODULE: GRAPH SEARCH
+// ═══════════════════════════════════════════════
+const GRAPHSEARCH=(()=>{
+  let nodes=[],edges=[],src=0,dst=5,visSet=new Set(),frontSet=new Set(),pathEdges=new Set(),pathNodes=new Set(),clickMode=0;
+  function resize(){const a=document.getElementById('canvas-area');cv.width=a.clientWidth-28;cv.height=a.clientHeight-28;}
+  function buildGraph(){
+    const W=cv.width,H=cv.height;
+    nodes=[{x:.17*W,y:.42*H,l:'A'},{x:.35*W,y:.18*H,l:'B'},{x:.35*W,y:.68*H,l:'C'},{x:.56*W,y:.28*H,l:'D'},{x:.56*W,y:.68*H,l:'E'},{x:.80*W,y:.42*H,l:'F'},{x:.24*W,y:.76*H,l:'G'},{x:.50*W,y:.86*H,l:'H'},{x:.72*W,y:.78*H,l:'I'}];
+    edges=[{a:0,b:1,w:4},{a:0,b:2,w:3},{a:0,b:6,w:7},{a:1,b:3,w:5},{a:1,b:2,w:2},{a:2,b:4,w:6},{a:2,b:6,w:4},{a:3,b:5,w:3},{a:3,b:4,w:2},{a:4,b:5,w:5},{a:4,b:7,w:4},{a:5,b:8,w:2},{a:6,b:7,w:5},{a:7,b:8,w:3}];
+    src=0;dst=nodes.length-1;visSet=new Set();frontSet=new Set();pathEdges=new Set();pathNodes=new Set();
+  }
+  function randGraph(n=8){
+    const W=cv.width,H=cv.height;
+    const pad=80;
+    nodes=[];
+    // Place nodes in a spread-out layout using a simple grid jitter
+    const cols=Math.ceil(Math.sqrt(n*1.6));
+    const rows=Math.ceil(n/cols);
+    const cw=(W-pad*2)/cols, ch=(H-pad*2)/rows;
+    const letters='ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    let placed=0;
+    for(let r=0;r<rows&&placed<n;r++){
+      for(let c=0;c<cols&&placed<n;c++){
+        const x=pad+c*cw+cw/2+(Math.random()-.5)*cw*.55;
+        const y=pad+r*ch+ch/2+(Math.random()-.5)*ch*.55;
+        nodes.push({x:Math.max(pad,Math.min(W-pad,x)), y:Math.max(pad,Math.min(H-pad,y)), l:letters[placed]});
+        placed++;
+      }
+    }
+    // Build edges: first ensure connectivity via a spanning chain, then add random extras
+    edges=[];
+    const added=new Set();
+    const ep2=(a,b)=>`${Math.min(a,b)}-${Math.max(a,b)}`;
+    // Shuffle a path through all nodes to guarantee connectivity
+    const order=[...Array(n).keys()].sort(()=>Math.random()-.5);
+    for(let i=0;i<order.length-1;i++){
+      const a=order[i],b=order[i+1];
+      const w=Math.round(Math.hypot(nodes[a].x-nodes[b].x,nodes[a].y-nodes[b].y)/50)+1;
+      edges.push({a,b,w});added.add(ep2(a,b));
+    }
+    // Add ~n extra random short edges
+    for(let attempt=0;attempt<n*6;attempt++){
+      const a=Math.floor(Math.random()*n);
+      // Pick nearest unconnected neighbour
+      const sorted=[...Array(n).keys()].filter(i=>i!==a&&!added.has(ep2(a,i)))
+        .sort((x,y)=>Math.hypot(nodes[a].x-nodes[x].x,nodes[a].y-nodes[x].y)-Math.hypot(nodes[a].x-nodes[y].x,nodes[a].y-nodes[y].y));
+      if(!sorted.length) continue;
+      const b=sorted[0];
+      const w=Math.round(Math.hypot(nodes[a].x-nodes[b].x,nodes[a].y-nodes[b].y)/50)+1;
+      edges.push({a,b,w});added.add(ep2(a,b));
+      if(edges.length>=n*2) break;
+    }
+    src=0;dst=n-1;
+    visSet=new Set();frontSet=new Set();pathEdges=new Set();pathNodes=new Set();
+  }
+  function ep(a,b){return`${Math.min(a,b)}-${Math.max(a,b)}`;}
+  function draw(){
+    ctx.fillStyle='#06060f';ctx.fillRect(0,0,cv.width,cv.height);
+    edges.forEach(e=>{
+      const na=nodes[e.a],nb=nodes[e.b],key=ep(e.a,e.b),isPth=pathEdges.has(key);
+      ctx.strokeStyle=isPth?'#10b981':'rgba(255,255,255,.08)';ctx.lineWidth=isPth?3:1.5;
+      if(isPth){ctx.shadowColor='#10b981';ctx.shadowBlur=8;}
+      ctx.beginPath();ctx.moveTo(na.x,na.y);ctx.lineTo(nb.x,nb.y);ctx.stroke();ctx.shadowBlur=0;
+      const mx=(na.x+nb.x)/2,my=(na.y+nb.y)/2;
+      ctx.fillStyle='#2e2e58';ctx.font='9px JetBrains Mono';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(e.w,mx,my-7);
+    });
+    nodes.forEach((n,i)=>{
+      let fill='#0c0c22',stroke='rgba(255,255,255,.1)',glow='transparent',r=18;
+      if(i===src){fill='#1a0a3a';stroke='#8b5cf6';glow='#8b5cf6';}
+      else if(i===dst){fill='#3a0a0a';stroke='#ef4444';glow='#ef4444';}
+      else if(pathNodes.has(i)){fill='#052a18';stroke='#10b981';glow='#10b981';}
+      else if(visSet.has(i)){fill='#071428';stroke='#3b82f6';glow='#3b82f6';}
+      else if(frontSet.has(i)){fill='#1a1200';stroke='#f59e0b';glow='#f59e0b';r=20;}
+      ctx.shadowColor=glow;ctx.shadowBlur=glow!=='transparent'?12:0;
+      ctx.beginPath();ctx.arc(n.x,n.y,r,0,Math.PI*2);ctx.fillStyle=fill;ctx.fill();ctx.strokeStyle=stroke;ctx.lineWidth=2.5;ctx.stroke();ctx.shadowBlur=0;
+      ctx.fillStyle='#dde0f5';ctx.font='bold 12px JetBrains Mono';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(n.l,n.x,n.y);
+    });
+    ctx.textBaseline='alphabetic';
+    ctx.fillStyle='#8b5cf6';ctx.font='10px JetBrains Mono';ctx.textAlign='left';ctx.fillText(`◉ Source: ${nodes[src].l} | Click node to change`,12,cv.height-22);
+    ctx.fillStyle='#ef4444';ctx.fillText(`◉ Dest: ${nodes[dst].l} | ${clickMode===0?'Next click = Source':'Next click = Destination'}`,12,cv.height-8);
+  }
+  cv.addEventListener('click',e=>{
+    if(CUR!=='graphsearch'||BUSY)return;
+    const b=cv.getBoundingClientRect(),sx=cv.width/b.width,sy=cv.height/b.height;
+    const mx=(e.clientX-b.left)*sx,my=(e.clientY-b.top)*sy;
+    const ni=nodes.findIndex(n=>Math.hypot(n.x-mx,n.y-my)<22);
+    if(ni<0)return;
+    if(clickMode===0){src=ni;clickMode=1;log(`Source: ${nodes[ni].l} — now click Destination`,'hi');}
+    else{dst=ni;clickMode=0;log(`Destination: ${nodes[ni].l} — click ▶ Run`,'hi');}
+    visSet=new Set();frontSet=new Set();pathEdges=new Set();pathNodes=new Set();draw();
+    setCK(0,nodes[src].l);setCK(1,nodes[dst].l);
+  });
+  function adj(n){return edges.flatMap(e=>e.a===n?[{n:e.b,w:e.w}]:e.b===n?[{n:e.a,w:e.w}]:[]);}
+  function eu(a,b){return Math.hypot(nodes[a].x-nodes[b].x,nodes[a].y-nodes[b].y)*.1;}
+  function traceG(par,end){const p=[];let c=end;while(c!==null){p.unshift(c);c=par[c];}return p;}
+  function pqS(arr,k){arr.sort((a,b)=>a[k]-b[k]);}
+  function runAlgo(){
+    const algo=document.getElementById('algo-sel').value,steps=[];
+    if(algo==='BFS'){
+      const q=[{n:src,path:[src]}],v=new Set([src]);
+      while(q.length){const{n,path}=q.shift();steps.push({t:'v',n,algo:'BFS'});if(n===dst){steps.push({t:'p',path,cost:path.length-1});break;}for(const{n:nb}of adj(n))if(!v.has(nb)){v.add(nb);q.push({n:nb,path:[...path,nb]});steps.push({t:'f',n:nb});}}
+    } else if(algo==='DFS'||algo==='DLS'){
+      const limit=algo==='DLS'?4:999,stk=[{n:src,path:[src],d:0}],v=new Set();
+      while(stk.length){const{n,path,d}=stk.pop();if(v.has(n))continue;v.add(n);steps.push({t:'v',n});if(n===dst){steps.push({t:'p',path,cost:path.length-1});break;}if(d<limit)for(const{n:nb}of adj(n))if(!v.has(nb)){stk.push({n:nb,path:[...path,nb],d:d+1});steps.push({t:'f',n:nb});}}
+    } else if(algo==='Dijkstra'||algo==='UCS'){
+      const d={[src]:0},par={[src]:null},v=new Set(),pq=[{n:src,d:0}];
+      while(pq.length){pqS(pq,'d');const{n,d:dn}=pq.shift();if(v.has(n))continue;v.add(n);steps.push({t:'v',n,cost:dn});if(n===dst){const p=traceG(par,dst);steps.push({t:'p',path:p,cost:dn});break;}for(const{n:nb,w}of adj(n)){const nd=dn+w;if(d[nb]===undefined||nd<d[nb]){d[nb]=nd;par[nb]=n;pq.push({n:nb,d:nd});steps.push({t:'f',n:nb});}}}
+    } else if(algo==='A*'){
+      const g={[src]:0},par={[src]:null},v=new Set(),pq=[{n:src,f:eu(src,dst),g:0}];
+      while(pq.length){pqS(pq,'f');const{n,g:gn}=pq.shift();if(v.has(n))continue;v.add(n);steps.push({t:'v',n});if(n===dst){const p=traceG(par,dst);steps.push({t:'p',path:p,cost:gn});break;}for(const{n:nb,w}of adj(n)){const ng=gn+w;if(g[nb]===undefined||ng<g[nb]){g[nb]=ng;par[nb]=n;pq.push({n:nb,f:ng+eu(nb,dst),g:ng});steps.push({t:'f',n:nb});}}}
+    } else if(algo==='IDA*'){
+      let thr=eu(src,dst);
+      for(let iter=0;iter<20;iter++){
+        let minNext=Infinity,found=false;const v=new Set([src]);
+        function search(n,gn,path){const f=gn+eu(n,dst);if(f>thr){minNext=Math.min(minNext,f);return;}steps.push({t:'v',n});if(n===dst){steps.push({t:'p',path:[...path,n],cost:gn});found=true;return;}for(const{n:nb,w}of adj(n)){if(!v.has(nb)){v.add(nb);steps.push({t:'f',n:nb});search(nb,gn+w,[...path,n]);if(found)return;v.delete(nb);}}}
+        search(src,0,[]);if(found)break;if(minNext===Infinity){steps.push({t:'x'});break;}thr=minNext;
+      }
+    }
+    if(!steps.some(s=>s.t==='p')&&!steps.some(s=>s.t==='x'))steps.push({t:'x'});
+    return steps;
+  }
+  function buildExtrasGS(){
+    document.getElementById('extra-tools').innerHTML=`
+      <button class="btn" onclick="MODULES.graphsearch.newRand(8)">🎲 Random (8)</button>
+      <button class="btn" onclick="MODULES.graphsearch.newRand(12)">🎲 Random (12)</button>
+      <button class="btn" onclick="MODULES.graphsearch.newDefault()">↺ Default</button>`;
+  }
+  return{
+    newRand(n){stopAll();resize();randGraph(n);draw();clickMode=0;log(`Random graph with ${n} nodes generated. Click a node to set Source.`,'hi');setCK(0,nodes[src].l);setCK(1,nodes[dst].l);},
+    newDefault(){stopAll();resize();buildGraph();draw();clickMode=0;log('Default graph loaded.','hi');setCK(0,nodes[src].l);setCK(1,nodes[dst].l);},
+    init(){resize();buildGraph();buildExtrasGS();draw();clickMode=0;log('Click a node → Source, then click another → Destination → ▶ Run','hi');setCK(0,nodes[src].l);setCK(1,nodes[dst].l);},
+    run(){
+      const algo=document.getElementById('algo-sel').value;
+      log(`▶ ${algo}: ${nodes[src].l} → ${nodes[dst].l}`,'hi');
+      setPhase('running',`${algo} exploring graph...`);setAlgoStep(0);
+      visSet=new Set();frontSet=new Set();pathEdges=new Set();pathNodes=new Set();
+      const steps=runAlgo();let vc=0,pf=0;
+      animate(steps,s=>{
+        if(s.t==='v'){vc++;visSet.add(s.n);frontSet.delete(s.n);addVisited();setAlgoStep(1);setPhase('visited',`Visiting node ${nodes[s.n].l}`);playStep();}
+        else if(s.t==='f'){frontSet.add(s.n);addFrontier();setAlgoStep(3);setPhase('frontier',`Adding ${nodes[s.n].l} to frontier`);playFrontier();}
+        else if(s.t==='p'){s.path.forEach((n,i)=>{if(i<s.path.length-1)pathEdges.add(ep(n,s.path[i+1]));pathNodes.add(n);});setPathResult('Cost '+Math.round(s.cost*10)/10);setAlgoStep(2);setPhase('path',`✓ ${s.path.map(n=>nodes[n].l).join('→')} | Cost: ${Math.round(s.cost*10)/10}`);log(`✓ Path: ${s.path.map(n=>nodes[n].l).join('→')} | cost: ${Math.round(s.cost*10)/10}`,'ok');playSuccess();}
+        else if(s.t==='x'){setPhase('error','No path found');log('✗ No path found','err');playFail();}
+        draw();
+      });
+    },
+    reset(){visSet=new Set();frontSet=new Set();pathEdges=new Set();pathNodes=new Set();draw();},
+    clear(){resize();buildGraph();draw();log('Graph reset to default','hi');}
+  };
+})();
+
+// ═══════════════════════════════════════════════
+// ██ MODULE: SEARCH TREE
+// ═══════════════════════════════════════════════
+const SEARCHTREE=(()=>{
+  let tNodes=[],tEdges=[],goalId=0,visSet=new Set(),frontSet=new Set();
+  let treeDepth=4, treeBranch=3;
+  function resize(){const a=document.getElementById('canvas-area');cv.width=a.clientWidth-28;cv.height=a.clientHeight-28;}
+  function build(){
+    tNodes=[];tEdges=[];
+    const W=cv.width,H=cv.height;
+    // Compute total nodes estimate to set vertical spacing
+    let id=0;
+    const levelH=Math.min(90, (H-80)/(treeDepth));
+    function add(depth,par,x,y,spread){
+      const nid=id++;
+      tNodes.push({id:nid,x,y,depth,l:String(nid)});
+      if(par!==null) tEdges.push({a:par,b:nid});
+      if(depth<treeDepth){
+        // Random branching: 2 or treeBranch children
+        const ch=depth===0?treeBranch:(Math.random()<.4?2:treeBranch-1);
+        const actualSpread=Math.max(spread*.7, 60);
+        for(let i=0;i<ch;i++){
+          const ox=(i-(ch-1)/2)*actualSpread;
+          add(depth+1,nid,x+ox,y+levelH,actualSpread/ch*1.6);
+        }
+      }
+    }
+    add(0,null,W/2,55,W*.42);
+    // Pick a random goal in the deeper half of the tree
+    const deepNodes=tNodes.filter(n=>n.depth>=Math.floor(treeDepth*.6));
+    const pick=deepNodes[Math.floor(Math.random()*deepNodes.length)];
+    goalId=pick?pick.id:tNodes[tNodes.length-1].id;
+    tNodes[goalId].l='G';
+    visSet=new Set();frontSet=new Set();
+  }
+  function children(n){return tEdges.filter(e=>e.a===n).map(e=>e.b);}
+
+  // Click a node to set it as the new Goal
+  cv.addEventListener('click',e=>{
+    if(CUR!=='searchtree'||BUSY) return;
+    const b=cv.getBoundingClientRect();
+    const sx=cv.width/b.width, sy=cv.height/b.height;
+    const mx=(e.clientX-b.left)*sx, my=(e.clientY-b.top)*sy;
+    const hit=tNodes.findIndex(n=>Math.hypot(n.x-mx,n.y-my)<18);
+    if(hit<0||hit===0) return; // can't set root as goal
+    // Remove old goal label
+    if(tNodes[goalId]) tNodes[goalId].l=String(goalId);
+    goalId=hit;
+    tNodes[goalId].l='G';
+    visSet=new Set(); frontSet=new Set();
+    draw();
+    log(`Goal moved to node ${goalId} (depth ${tNodes[goalId].depth})`, 'hi');
+    setCK(1, 'Node '+goalId);
+  });
+
+  function draw(){
+    ctx.fillStyle='#06060f';ctx.fillRect(0,0,cv.width,cv.height);
+    tEdges.forEach(e=>{const a=tNodes[e.a],b=tNodes[e.b];ctx.strokeStyle=visSet.has(e.b)?'rgba(59,130,246,.3)':'rgba(255,255,255,.06)';ctx.lineWidth=visSet.has(e.b)?2:1;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();});
+    tNodes.forEach(n=>{
+      let fill='#0c0c22',stroke='rgba(255,255,255,.1)',glow='transparent';
+      if(n.id===0){fill='#1a0a3a';stroke='#8b5cf6';glow='#8b5cf6';}
+      else if(n.id===goalId){fill='#3a0a0a';stroke='#ef4444';glow='#ef4444';}
+      else if(visSet.has(n.id)){fill='#071428';stroke='#3b82f6';glow='#3b82f6';}
+      else if(frontSet.has(n.id)){fill='#1a1200';stroke='#f59e0b';glow='#f59e0b';}
+      ctx.shadowColor=glow;ctx.shadowBlur=glow!=='transparent'?10:0;
+      ctx.beginPath();ctx.arc(n.x,n.y,14,0,Math.PI*2);ctx.fillStyle=fill;ctx.fill();ctx.strokeStyle=stroke;ctx.lineWidth=2;ctx.stroke();ctx.shadowBlur=0;
+      ctx.fillStyle=n.id===goalId?'#ef4444':n.id===0?'#8b5cf6':'#dde0f5';ctx.font='bold 10px JetBrains Mono';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(n.l,n.x,n.y);
+    });
+    ctx.textBaseline='alphabetic';ctx.fillStyle='#2e2e58';ctx.font='10px JetBrains Mono';ctx.textAlign='left';
+    ctx.fillText(`🟣 Start | 🔴 G = Goal | 🟡 Frontier | 🔵 Visited  (${tNodes.length} nodes)`,12,cv.height-8);
+  }
+  function buildExtrasTree(){
+    document.getElementById('extra-tools').innerHTML=`
+      <button class="btn" onclick="MODULES.searchtree.rebuild()">🔀 New Tree</button>
+      <select class="sel" onchange="MODULES.searchtree.setDepth(parseInt(this.value))">
+        <option value="3">Depth 3</option>
+        <option value="4" selected>Depth 4</option>
+        <option value="5">Depth 5</option>
+      </select>
+      <select class="sel" onchange="MODULES.searchtree.setBranch(parseInt(this.value))">
+        <option value="2">Branch 2</option>
+        <option value="3" selected>Branch 3</option>
+        <option value="4">Branch 4</option>
+      </select>`;
+  }
+  return{
+    setDepth(d){treeDepth=d;build();draw();log(`Tree depth set to ${d}. Goal = node G.`,'hi');},
+    setBranch(b){treeBranch=b;build();draw();log(`Branching factor set to ${b}. New tree generated.`,'hi');},
+    rebuild(){build();draw();visSet=new Set();frontSet=new Set();log(`New random tree — ${tNodes.length} nodes, goal = G`,'hi');setCK(0,'Root(0)');setCK(1,'G');},
+    init(){resize();build();buildExtrasTree();draw();log('Click any node to set it as Goal 🔴. Click 🔀 New Tree to randomize.','hi');setCK(0,'Root(0)');setCK(1,'G');},
+    run(){
+      const algo=document.getElementById('algo-sel').value;
+      visSet=new Set();frontSet=new Set();setPhase('running',`${algo} exploring...`);setAlgoStep(0);
+      log(`▶ ${algo} on search tree (goal=G)`,'hi');
+      const steps=[];
+      if(algo==='BFS'){const q=[0],v=new Set([0]);while(q.length){const n=q.shift();steps.push({t:'v',n,d:tNodes[n].depth});if(n===goalId){steps.push({t:'p',n});break;}children(n).forEach(c=>{if(!v.has(c)){v.add(c);q.push(c);steps.push({t:'f',n:c});}});}}
+      else if(algo==='DFS'){const stk=[0],v=new Set();while(stk.length){const n=stk.pop();if(v.has(n))continue;v.add(n);steps.push({t:'v',n,d:tNodes[n].depth});if(n===goalId){steps.push({t:'p',n});break;}[...children(n)].reverse().forEach(c=>{if(!v.has(c)){stk.push(c);steps.push({t:'f',n:c});}});}}
+      else{const pq=[{n:0,h:Math.abs(0-goalId)}],v=new Set();while(pq.length){pq.sort((a,b)=>a.h-b.h);const{n}=pq.shift();if(v.has(n))continue;v.add(n);steps.push({t:'v',n,d:tNodes[n].depth});if(n===goalId){steps.push({t:'p',n});break;}children(n).forEach(c=>{if(!v.has(c)){pq.push({n:c,h:Math.abs(c-goalId)});steps.push({t:'f',n:c});}});}}
+      if(!steps.some(s=>s.t==='p'))steps.push({t:'x'});
+      let vc=0,pf=0;
+      animate(steps,s=>{
+        if(s.t==='v'){vc++;visSet.add(s.n);frontSet.delete(s.n);addVisited();setAlgoStep(1);setPhase('visited',`Visiting node ${s.n} at depth ${s.d}`);playStep();}
+        else if(s.t==='f'){frontSet.add(s.n);addFrontier();setAlgoStep(3);setPhase('frontier',`Adding node ${s.n} to frontier`);playFrontier();}
+        else if(s.t==='p'){setPathResult('Depth '+tNodes[s.n].depth);setAlgoStep(2);setPhase('path',`✓ Goal G found after visiting ${vc} nodes`);log(`✓ Goal found! Visited ${vc} nodes`,'ok');playSuccess();}
+        else if(s.t==='x'){setPhase('error','Goal not found');log('Goal not found','err');playFail();}
+        draw();
+      });
+    },
+    reset(){visSet=new Set();frontSet=new Set();draw();},
+    clear(){build();draw();log('Tree cleared and rebuilt','hi');}
+  };
+})();
+
+// ═══════════════════════════════════════════════
+// ██ MODULE: N-QUEENS
+// ═══════════════════════════════════════════════
+const NQUEENS=(()=>{
+  let N=8,snaps=[],explored=0,bts=0;
+  function resize(){const a=document.getElementById('canvas-area');const sz=Math.min(a.clientWidth-28,a.clientHeight-28);cv.width=sz;cv.height=sz;}
+  function safe(b,row,col){for(let r=0;r<row;r++)if(b[r]===col||Math.abs(b[r]-col)===Math.abs(r-row))return false;return true;}
+  function solve(useFwd){
+    snaps=[];explored=0;bts=0;const b=new Array(N).fill(-1);
+    const doms=Array.from({length:N},()=>new Set(Array.from({length:N},(_,i)=>i)));
+    function bt(row){
+      explored++;if(row===N){snaps.push({b:[...b],st:'sol'});return true;}
+      const dom=useFwd?[...doms[row]].sort((a,c)=>a-c):Array.from({length:N},(_,i)=>i);
+      for(const col of dom){
+        if(safe(b,row,col)){
+          b[row]=col;snaps.push({b:[...b],row,col,st:'place'});
+          let ok=true;const backup={};
+          if(useFwd){for(let r2=row+1;r2<N;r2++){backup[r2]=new Set(doms[r2]);doms[r2].delete(col);for(let c2=0;c2<N;c2++)if(Math.abs(col-c2)===Math.abs(row-r2))doms[r2].delete(c2);if(doms[r2].size===0){ok=false;break;}}}
+          if(ok&&bt(row+1))return true;
+          b[row]=-1;bts++;snaps.push({b:[...b],row,col,st:'back'});
+          if(useFwd)Object.entries(backup).forEach(([r2,d])=>{doms[r2]=d;});
+        }
+      }return false;
+    }
+    bt(0);
+  }
+  function draw(snap){
+    const SZ=cv.width,CELL=SZ/N;
+    ctx.fillStyle='#06060f';ctx.fillRect(0,0,SZ,SZ);
+    for(let r=0;r<N;r++) for(let c=0;c<N;c++){ctx.fillStyle=(r+c)%2===0?'#11112e':'#0c0c22';ctx.fillRect(c*CELL,r*CELL,CELL,CELL);}
+    if(!snap)return;
+    snap.b.forEach((col,row)=>{
+      if(col<0)return;
+      const isBack=snap.st==='back'&&snap.row===row,isSol=snap.st==='sol';
+      // Colored row highlight
+      ctx.fillStyle=isBack?'rgba(239,68,68,.2)':isSol?'rgba(16,185,129,.12)':'rgba(245,158,11,.15)';
+      ctx.fillRect(col*CELL,row*CELL,CELL,CELL);
+      // Highlight attacked columns/diagonals subtly
+      if(!isBack&&!isSol){ctx.fillStyle='rgba(245,158,11,.04)';for(let c2=0;c2<N;c2++){if(c2!==col)ctx.fillRect(c2*CELL,row*CELL,CELL,CELL);}for(let r2=row+1;r2<N;r2++){const dc=Math.abs(r2-row);if(col-dc>=0)ctx.fillRect((col-dc)*CELL,r2*CELL,CELL,CELL);if(col+dc<N)ctx.fillRect((col+dc)*CELL,r2*CELL,CELL,CELL);}}
+      const fs=Math.max(10,Math.round(CELL*.58));
+      ctx.font=`${fs}px serif`;ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.shadowColor=isSol?'#10b981':isBack?'#ef4444':'#f59e0b';ctx.shadowBlur=10;
+      ctx.fillStyle=isSol?'#10b981':isBack?'#ef4444':'#f59e0b';
+      ctx.fillText('♛',col*CELL+CELL/2,row*CELL+CELL/2);ctx.shadowBlur=0;
+    });
+    ctx.textBaseline='alphabetic';ctx.fillStyle='#2e2e58';ctx.font='9px JetBrains Mono';ctx.textAlign='left';ctx.fillText(`N=${N}  explored=${explored}  backtracks=${bts}`,6,SZ-5);
+  }
+  return{
+    setN(n){N=n;snaps=[];explored=0;bts=0;resize();draw(null);log(`Board: ${N}×${N}`,'hi');},
+    init(){resize();snaps=[];explored=0;bts=0;document.getElementById('extra-tools').innerHTML='';draw(null);log(`${N}-Queens CSP. Amber=placing, Red=backtrack, Green=solved.`,'hi');setCK(0,'—');setCK(1,'—');},
+    run(){
+      const algo=document.getElementById('algo-sel').value;
+      setPhase('running',`Solving ${N}-Queens with ${algo}...`);setAlgoStep(0);
+      log(`▶ ${algo} on ${N}-Queens`,'hi');
+      const t0=performance.now();solve(algo==='Fwd Checking');
+      const elapsed=Math.round(performance.now()-t0);
+      setSC(0,explored);setSC(1,bts);setSC(3,elapsed+'ms');
+      const solved=snaps.some(s=>s.st==='sol');
+      setPathResult(solved?'Solved':'No sol');
+      log(`Done: explored=${explored}, bt=${bts}, ${elapsed}ms`,'ok');
+      let si=0;
+      animate(snaps,s=>{
+        draw(s);si++;
+        const cls=s.st==='back'?'err':s.st==='sol'?'ok':'fr';
+        if(s.st==='back'){setAlgoStep(2);setPhase('running',`Backtrack row ${s.row} — trying next value`);if(si%5===0)log(`  Backtrack at row ${s.row}`,'err');}
+        else if(s.st==='sol'){setAlgoStep(4);setPhase('done',`Solution found! Queens placed.`);log('✓ All queens placed — no conflicts!','ok');playSuccess();}
+        else{setAlgoStep(0);setPhase('frontier',`Row ${s.row}: Queen at col ${s.col}`);if(si%8===0)playFrontier();}
+      });
+    },
+    reset(){snaps=[];explored=0;bts=0;draw(null);},
+    clear(){snaps=[];explored=0;bts=0;draw(null);}
+  };
+})();
+
+// ═══════════════════════════════════════════════
+// ██ MODULE: MAP COLORING
+// ═══════════════════════════════════════════════
+const MAPCOLOR=(()=>{
+  const COLS=['#ef4444','#3b82f6','#f59e0b','#10b981'];
+  const CNAMES=['Red','Blue','Amber','Green'];
+  let snaps=[],explored=0,bts=0;
+  const ROOMS=[
+    {id:'A',label:'Room A',cx:115,cy:110,poly:[{x:10,y:10},{x:220,y:10},{x:220,y:210},{x:10,y:210}]},
+    {id:'B',label:'Room B',cx:320,cy:90, poly:[{x:220,y:10},{x:440,y:10},{x:440,y:170},{x:220,y:170}]},
+    {id:'C',label:'Room C',cx:115,cy:290,poly:[{x:10,y:210},{x:220,y:210},{x:220,y:380},{x:10,y:380}]},
+    {id:'D',label:'Room D',cx:320,cy:265,poly:[{x:220,y:170},{x:440,y:170},{x:440,y:380},{x:220,y:380}]},
+    {id:'E',label:'Room E',cx:530,cy:160,poly:[{x:440,y:10},{x:620,y:10},{x:620,y:310},{x:440,y:310}]},
+    {id:'F',label:'Corridor',cx:200,cy:450,poly:[{x:10,y:380},{x:320,y:380},{x:320,y:510},{x:10,y:510}]},
+    {id:'G',label:'Lobby',  cx:475,cy:440,poly:[{x:320,y:380},{x:620,y:380},{x:620,y:510},{x:320,y:510}]},
+  ];
+  const ADJ={A:['B','C'],B:['A','D','E'],C:['A','D','F'],D:['B','C','E','F','G'],E:['B','D','G'],F:['C','D','G'],G:['D','E','F']};
+  const IDS=ROOMS.map(r=>r.id);
+  function resize(){const a=document.getElementById('canvas-area');cv.width=a.clientWidth-28;cv.height=a.clientHeight-28;}
+  function solve(useFwd){
+    snaps=[];explored=0;bts=0;const col={},doms={};
+    IDS.forEach(id=>{doms[id]=new Set([0,1,2,3]);});
+    function assign(i){
+      explored++;if(i===IDS.length){snaps.push({col:{...col},st:'sol'});return true;}
+      const id=IDS[i],dom=useFwd?[...doms[id]]:[0,1,2,3];
+      for(const c of dom){
+        const ok=(ADJ[id]||[]).every(nb=>col[nb]===undefined||col[nb]!==c);
+        if(ok){col[id]=c;snaps.push({col:{...col},cur:id,st:'place'});let valid=true;const backup={};
+          if(useFwd){(ADJ[id]||[]).forEach(nb=>{if(col[nb]===undefined){backup[nb]=new Set(doms[nb]);doms[nb].delete(c);if(doms[nb].size===0)valid=false;}});}
+          if(valid&&assign(i+1))return true;
+          delete col[id];bts++;snaps.push({col:{...col},cur:id,conflict:id,st:'back'});
+          if(useFwd)Object.entries(backup).forEach(([nb,d])=>{doms[nb]=d;});
+        }
+      }return false;
+    }
+    assign(0);
+  }
+  function draw(snap){
+    const a=document.getElementById('canvas-area');
+    const scX=(cv.width)/640,scY=(cv.height)/530,sc=Math.min(scX,scY);
+    const offX=(cv.width-640*sc)/2,offY=(cv.height-530*sc)/2;
+    ctx.fillStyle='#06060f';ctx.fillRect(0,0,cv.width,cv.height);
+    ctx.save();ctx.translate(offX,offY);ctx.scale(sc,sc);
+    const col=snap?snap.col:{};
+    IDS.forEach(id=>{const r1=ROOMS.find(r=>r.id===id);(ADJ[id]||[]).forEach(nb=>{const r2=ROOMS.find(r=>r.id===nb);ctx.strokeStyle='rgba(255,255,255,.05)';ctx.lineWidth=1;ctx.setLineDash([4,4]);ctx.beginPath();ctx.moveTo(r1.cx,r1.cy);ctx.lineTo(r2.cx,r2.cy);ctx.stroke();ctx.setLineDash([]);});});
+    ROOMS.forEach(r=>{
+      const ci=col[r.id],isConflict=snap&&snap.conflict===r.id,isCur=snap&&snap.cur===r.id;
+      ctx.fillStyle=ci!==undefined?COLS[ci]+'30':'#10101f';
+      let stroke='rgba(255,255,255,.1)';
+      if(isConflict)stroke='#ef4444';else if(ci!==undefined)stroke=COLS[ci];else if(isCur)stroke='#f59e0b';
+      ctx.strokeStyle=stroke;ctx.lineWidth=isConflict?3:ci!==undefined?2:1;
+      if(ci!==undefined||isConflict){ctx.shadowColor=stroke;ctx.shadowBlur=isConflict?16:10;}
+      ctx.beginPath();ctx.moveTo(r.poly[0].x,r.poly[0].y);r.poly.forEach(p=>ctx.lineTo(p.x,p.y));ctx.closePath();ctx.fill();ctx.stroke();ctx.shadowBlur=0;
+      ctx.fillStyle=ci!==undefined?COLS[ci]:'#5a5a8a';ctx.font='bold 13px Outfit';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(r.label,r.cx,r.cy);
+      if(ci!==undefined){ctx.font='10px JetBrains Mono';ctx.fillText(CNAMES[ci],r.cx,r.cy+18);}
+    });
+    ctx.restore();
+    COLS.forEach((c,i)=>{ctx.fillStyle=c;ctx.shadowColor=c;ctx.shadowBlur=5;ctx.fillRect(10+i*75,cv.height-20,12,12);ctx.shadowBlur=0;ctx.fillStyle='#5a5a8a';ctx.font='10px JetBrains Mono';ctx.textAlign='left';ctx.textBaseline='alphabetic';ctx.fillText(CNAMES[i],26+i*75,cv.height-10);});
+  }
+  return{
+    init(){resize();snaps=[];explored=0;bts=0;document.getElementById('extra-tools').innerHTML='';draw(null);log('Map Coloring CSP — 7 rooms, 4 colors. Click ▶ Run.','hi');setCK(0,'7 rooms');setCK(1,'4 colors');},
+    run(){
+      const algo=document.getElementById('algo-sel').value;
+      setPhase('running',`${algo} coloring rooms...`);setAlgoStep(0);
+      log(`▶ ${algo} on map coloring (7 rooms, 4 colors)`,'hi');
+      const t0=performance.now();solve(algo==='Fwd Checking');
+      const elapsed=Math.round(performance.now()-t0);
+      setSC(0,explored);setSC(1,bts);setSC(3,elapsed+'ms');
+      const solved=snaps.some(s=>s.st==='sol');setPathResult(solved?'Solved':'No sol');
+      log(`Done: explored=${explored}, bt=${bts}, ${elapsed}ms`,'ok');
+      animate(snaps,s=>{
+        draw(s);
+        if(s.st==='back'){setAlgoStep(2);setPhase('running',`Backtrack: ${s.cur} — conflict!`);log(`  Backtrack at ${s.cur}`,'err');}
+        else if(s.st==='sol'){setAlgoStep(4);setPhase('done','All rooms colored!');log('✓ All rooms colored — no conflicts!','ok');playSuccess();}
+        else{setAlgoStep(0);setPhase('frontier',`Coloring room ${s.cur}`);playFrontier();}
+      });
+    },
+    reset(){snaps=[];explored=0;bts=0;draw(null);},
+    clear(){snaps=[];explored=0;bts=0;draw(null);}
+  };
+})();
+
+// ═══════════════════════════════════════════════
+//  MODULES MAP
+// ═══════════════════════════════════════════════
+const MODULES={
+  maze:MAZE, missionaries:MISSIONARIES, tsp:TSP, tictactoe:TICTACTOE,
+  graphsearch:GRAPHSEARCH, searchtree:SEARCHTREE,
+  nqueens:NQUEENS, mapcolor:MAPCOLOR, tictactoe3:TICTACTOE,
+};
+
+// ═══════════════════════════════════════════════
+//  BOOT
+// ═══════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded',()=>{
+  buildSidebar();switchTo('maze');
+  // Unlock audio on first click
+  document.addEventListener('click',()=>{if(AC.state==='suspended')AC.resume();},{once:true});
+});
+window.addEventListener('resize',()=>{const m=MODULES[CUR];if(m&&m.init)m.init();});
+</script>
+</body>
+</html>
