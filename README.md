@@ -5,7 +5,6 @@ Live at: https://state-space-expo.vercel.app
 An interactive visualizer for AI search algorithms built as part of an AI course project covering Units 1, 2, and 3. The goal is to make abstract search concepts visible — you can watch an algorithm explore a state space step by step, see the frontier grow and shrink, and understand why different algorithms make different decisions.
 
 ---
-
 ## Problem Formulation and State Space
 
 Every problem in this app is modeled as a formal AI search problem with the following components:
