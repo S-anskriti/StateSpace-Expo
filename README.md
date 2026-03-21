@@ -92,15 +92,3 @@ Most problems let you change things before running:
 ## Tech
 
 Plain HTML, CSS, and JavaScript. No libraries. Canvas API for rendering, Web Audio API for sound effects. Split into separate files — one per problem module.
-
----
-
-## Run locally
-
-```
-git clone https://github.com/S-anskriti/StateSpace-Expo.git
-cd StateSpace-Expo
-open index.html
-```
-
----
