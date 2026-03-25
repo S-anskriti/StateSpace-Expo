@@ -9,8 +9,11 @@
 </head>
 <body>
 
-  <!-- top nav bar thing -->
+  <!-- top nav bar -->
   <div class="topbar">
+    <!-- hamburger - only shows on tablet/mobile -->
+    <button class="menu-btn" id="menu-btn" onclick="toggleSidebar()" title="Menu">&#9776;</button>
+
     <div class="brand">
       <span class="brand-ss">StateSpace</span>
       <span class="brand-ex">EXPO</span>
@@ -19,7 +22,7 @@
     <div class="topbar-desc">AI Search &amp; Problem Solving Visualizer</div>
     <div class="topbar-sep"></div>
 
-    <!-- color legend so user knows what colors mean -->
+    <!-- color legend -->
     <div class="tl">
       <div class="tli"><div class="tld" style="background:#8b5cf6;box-shadow:0 0 5px #8b5cf6"></div>Start</div>
       <div class="tli"><div class="tld" style="background:#ef4444;box-shadow:0 0 5px #ef4444"></div>Goal</div>
@@ -29,18 +32,20 @@
     </div>
 
     <div class="sp"></div>
-    <!-- sound toggle button -->
-    <button class="sound-btn" id="sound-btn" onclick="toggleSound()" title="Toggle sound">🔊</button>
+    <button class="sound-btn" id="sound-btn" onclick="toggleSound()" title="Toggle sound">&#128266;</button>
   </div>
+
+  <!-- overlay behind sidebar on mobile -->
+  <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()"></div>
 
   <div class="body">
 
-    <!-- sidebar with all problems listed -->
+    <!-- sidebar -->
     <div class="sidebar" id="sidebar"></div>
 
     <div class="main">
 
-      <!-- toolbar with algo dropdown and run buttons -->
+      <!-- toolbar -->
       <div class="toolbar">
         <span class="tb-title" id="tb-title">Maze Pathfinding</span>
         <div class="tb-sep"></div>
@@ -48,7 +53,6 @@
         <button class="btn run" id="run-btn" onclick="doRun()">&#9654; Run</button>
         <button class="btn" onclick="doReset()">&#8635; Reset</button>
         <button class="btn warn" onclick="doClear()">&#x2715; Clear</button>
-        <!-- extra buttons per problem go here -->
         <div id="extra-tools"></div>
         <div class="sp"></div>
         <div class="speed-wrap">
@@ -61,13 +65,11 @@
 
       <div class="workspace">
 
-        <!-- main canvas area -->
+        <!-- canvas + status bar -->
         <div class="canvas-wrap">
           <div class="canvas-area" id="canvas-area">
             <canvas id="cv"></canvas>
           </div>
-
-          <!-- shows what algo is doing right now -->
           <div class="status-bar">
             <div class="phase-dot" id="phase-dot" style="background:var(--mut)"></div>
             <span class="phase-txt" id="phase-txt" style="color:var(--mut)">READY</span>
@@ -81,8 +83,8 @@
           </div>
         </div>
 
-        <!-- right side info panel -->
-        <div class="info">
+        <!-- right info panel -->
+        <div class="info" id="info-panel">
           <div class="ip-sec">
             <div class="ip-lbl">Algorithm</div>
             <div id="algo-mount"></div>
@@ -119,7 +121,7 @@
     </div>
   </div>
 
-  <!-- load all js files -->
+  <!-- scripts -->
   <script src="utils.js"></script>
   <script src="data.js"></script>
   <script src="maze.js"></script>
@@ -131,6 +133,40 @@
   <script src="nqueens.js"></script>
   <script src="mapcolor.js"></script>
   <script src="app.js"></script>
+
+  <script>
+    // sidebar toggle for tablet/mobile
+    function toggleSidebar() {
+      var sb  = document.getElementById('sidebar');
+      var ov  = document.getElementById('sidebar-overlay');
+      var isOpen = sb.classList.contains('open');
+      if (isOpen) {
+        sb.classList.remove('open');
+        ov.classList.remove('open');
+      } else {
+        sb.classList.add('open');
+        ov.classList.add('open');
+      }
+    }
+
+    function closeSidebar() {
+      document.getElementById('sidebar').classList.remove('open');
+      document.getElementById('sidebar-overlay').classList.remove('open');
+    }
+
+    // close sidebar when a problem is selected on mobile
+    var origSwitch = window.switchProblem;
+    window.addEventListener('DOMContentLoaded', function() {
+      // patch switchProblem to also close sidebar on mobile
+      var origFn = window.switchProblem;
+      if (origFn) {
+        window.switchProblem = function(key) {
+          origFn(key);
+          if (window.innerWidth <= 1024) closeSidebar();
+        };
+      }
+    });
+  </script>
 
 </body>
 </html>
